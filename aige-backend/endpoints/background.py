@@ -4,7 +4,8 @@ from pydantic import BaseModel
 from uuid import uuid4
 import logging
 
-from ..aige_microservice import task_status_db
+# from ..aige_microservice import task_status_db
+from ..storage import task_status_db
 from ..config import FAL_API_TOKEN, BACKGROUND_GENERATION_MODEL
 import httpx # For consistency
 

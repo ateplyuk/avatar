@@ -5,7 +5,8 @@ from pydantic import BaseModel
 import logging
 from uuid import uuid4
 
-from ..aige_microservice import task_status_db
+# from ..aige_microservice import task_status_db
+from ..storage import task_status_db
 from ..config import FAL_API_TOKEN, AVATAR_GENERATION_MODEL, BACKGROUND_REMOVAL_MODEL
 import httpx # Included as per requirement, though not used for actual calls yet
 

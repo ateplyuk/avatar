@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from ..aige_microservice import task_status_db # Assuming direct import for now
+# from ..aige_microservice import task_status_db # Assuming direct import for now
+from ..storage import task_status_db
 import logging
 
 router = APIRouter()

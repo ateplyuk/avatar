@@ -1,6 +1,8 @@
 import uvicorn
 from fastapi import FastAPI, APIRouter
 import logging
+from .storage import task_status_db
+import sys
 
 # Configure basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -10,7 +12,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 
 # In-memory dictionary to store task statuses
-task_status_db = {}
+# task_status_db = {}
 
 # Create a main router
 api_router = APIRouter()
@@ -33,6 +35,8 @@ api_router.include_router(background_router.router, tags=["background"]) # Will 
 # Include the main api_router into the app with a global prefix
 app.include_router(api_router, prefix="/api/v1")
 
-if __name__ == "__main__":
+if __name__ == "__main__" or (
+    hasattr(sys, "argv") and sys.argv[0].endswith("aige-backend.aige_microservice")
+):
     logger.info("AIGE Microservice starting...")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("aige-backend.aige_microservice:app", host="0.0.0.0", port=8000, factory=False)

@@ -15,18 +15,22 @@ const apiClient = axios.create({
  * @param {string} avatarData.prompt - The text prompt.
  * @param {string} avatarData.aspect_ratio - The desired aspect ratio (e.g., "1:1", "16:9").
  * @param {string} avatarData.avatar_id - The client-generated avatar ID.
- * @returns {Promise<object>} The response from the API, expecting fields like readUrl, writeUrl, aige_task_id.
+ * @param {string} avatarData.writeUrl - The pre-signed URL to write the result.
+ * @param {string} avatarData.readUrl - The URL to read the result from.
+ * @param {string[]} avatarData.source_images - Array of source image URLs.
+ * @returns {Promise<object>} The response from the API.
  */
 export const generateAvatar = async (avatarData) => {
-  // Destructure to ensure only expected fields are sent
-  const { prompt, aspect_ratio, avatar_id } = avatarData;
-  const payload = { prompt, aspect_ratio, avatar_id };
+  // Destructure to ensure only expected fields are sent, and all required ones are present
+  const { prompt, aspect_ratio, avatar_id, writeUrl, readUrl, source_images } = avatarData;
+  const payload = { prompt, aspect_ratio, avatar_id, writeUrl, readUrl, source_images };
   try {
     const response = await apiClient.post('/avatar', payload);
     return response.data;
   } catch (error) {
     console.error('Error generating avatar:', error.response ? error.response.data : error.message);
-    throw error.response ? error.response.data : new Error('Network error or server issue');
+    // Propagate the error object for detailed feedback in the component
+    throw error.response ? error.response.data : new Error('Network error or server issue while generating avatar');
   }
 };
 
@@ -37,19 +41,22 @@ export const generateAvatar = async (avatarData) => {
  * @param {string} backgroundData.prompt - The text prompt.
  * @param {string} backgroundData.aspect_ratio - The desired aspect ratio.
  * @param {string} backgroundData.avatar_id - The avatar_id (repeated in body for backend validation).
- * @returns {Promise<object>} The response from the API, expecting fields like readUrl, writeUrl, aige_task_id.
+ * @param {string} backgroundData.writeUrl - The pre-signed URL to write the result.
+ * @param {string} backgroundData.readUrl - The URL to read the result from.
+ * @param {string[]} backgroundData.source_images - Array of source image URLs.
+ * @returns {Promise<object>} The response from the API.
  */
 export const generateBackground = async (avatarIdFromPath, backgroundData) => {
-  // Destructure to ensure only expected fields are sent
-  const { prompt, aspect_ratio, avatar_id } = backgroundData;
-  const payload = { prompt, aspect_ratio, avatar_id };
+  // Destructure for clarity and to ensure all required fields are present
+  const { prompt, aspect_ratio, avatar_id, writeUrl, readUrl, source_images } = backgroundData;
+  const payload = { prompt, aspect_ratio, avatar_id, writeUrl, readUrl, source_images };
   try {
-    // Note: avatarIdFromPath is used in the URL, backgroundData.avatar_id is in the body.
     const response = await apiClient.put(`/avatar/${avatarIdFromPath}/background`, payload);
     return response.data;
   } catch (error) {
     console.error('Error generating background:', error.response ? error.response.data : error.message);
-    throw error.response ? error.response.data : new Error('Network error or server issue');
+    // Propagate the error object
+    throw error.response ? error.response.data : new Error('Network error or server issue while generating background');
   }
 };
 
@@ -63,11 +70,12 @@ export const getTaskStatus = async (aigeTaskId) => {
     const response = await apiClient.get(`/task/${aigeTaskId}/status`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching task status:', error.response ? error.response.data : error.message);
+    console.error('Error fetching task status for ID', aigeTaskId, ':', error.response ? error.response.data : error.message);
     if (error.response && error.response.status === 404) {
-        return { aige_task_id: aigeTaskId, status: 'not_found', error: 'Task ID not found or processing not initiated.' };
+        // Using 'error_message' key as per provided code for consistency in this function's error objects
+        return { aige_task_id: aigeTaskId, status: 'not_found', error_message: 'Task ID not found or processing not initiated.', details: error.response.data };
     }
-    // For other errors, let's return a generic error status with the message
-    return { aige_task_id: aigeTaskId, status: 'error_fetching_status', error: error.message };
+    // For other errors, let's return a generic error status with more details
+    return { aige_task_id: aigeTaskId, status: 'error_fetching_status', error_message: error.message, details: error.response ? error.response.data : null };
   }
 };

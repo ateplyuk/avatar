@@ -1,7 +1,6 @@
+// aige-frontend/src/services/api.js
 import axios from 'axios';
-
-// TODO: This should be in a configuration file (e.g., src/config.js or environment variables)
-const API_BASE_URL = 'http://176.99.135.55:8000/api/v1';
+import { API_BASE_URL } from '../config'; // Import from config
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -14,16 +13,16 @@ const apiClient = axios.create({
  * Generates an avatar by calling the backend API.
  * @param {object} avatarData - The data for avatar generation.
  * @param {string} avatarData.prompt - The text prompt.
- * @param {string} avatarData.resolution - The desired resolution (e.g., "256", "1024").
+ * @param {string} avatarData.aspect_ratio - The desired aspect ratio (e.g., "1:1", "16:9").
  * @param {string} avatarData.avatar_id - The client-generated avatar ID.
- * @param {string} avatarData.writeUrl - The pre-signed URL to write the result.
- * @param {string} avatarData.readUrl - The URL to read the result from.
- * @param {string[]} avatarData.source_images - Array of source image URLs (currently unused by backend).
- * @returns {Promise<object>} The response from the API.
+ * @returns {Promise<object>} The response from the API, expecting fields like readUrl, writeUrl, aige_task_id.
  */
 export const generateAvatar = async (avatarData) => {
+  // Destructure to ensure only expected fields are sent
+  const { prompt, aspect_ratio, avatar_id } = avatarData;
+  const payload = { prompt, aspect_ratio, avatar_id };
   try {
-    const response = await apiClient.post('/avatar', avatarData);
+    const response = await apiClient.post('/avatar', payload);
     return response.data;
   } catch (error) {
     console.error('Error generating avatar:', error.response ? error.response.data : error.message);
@@ -33,18 +32,20 @@ export const generateAvatar = async (avatarData) => {
 
 /**
  * Generates a background for a given avatar by calling the backend API.
- * @param {string} avatarId - The ID of the avatar for which to generate the background.
+ * @param {string} avatarIdFromPath - The ID of the avatar for which to generate the background (used in URL path).
  * @param {object} backgroundData - The data for background generation.
  * @param {string} backgroundData.prompt - The text prompt.
- * @param {string} backgroundData.resolution - The desired resolution.
- * @param {string} backgroundData.writeUrl - The pre-signed URL to write the result.
- * @param {string} backgroundData.readUrl - The URL to read the result from.
+ * @param {string} backgroundData.aspect_ratio - The desired aspect ratio.
  * @param {string} backgroundData.avatar_id - The avatar_id (repeated in body for backend validation).
- * @returns {Promise<object>} The response from the API.
+ * @returns {Promise<object>} The response from the API, expecting fields like readUrl, writeUrl, aige_task_id.
  */
-export const generateBackground = async (avatarId, backgroundData) => {
+export const generateBackground = async (avatarIdFromPath, backgroundData) => {
+  // Destructure to ensure only expected fields are sent
+  const { prompt, aspect_ratio, avatar_id } = backgroundData;
+  const payload = { prompt, aspect_ratio, avatar_id };
   try {
-    const response = await apiClient.put(`/avatar/${avatarId}/background`, backgroundData);
+    // Note: avatarIdFromPath is used in the URL, backgroundData.avatar_id is in the body.
+    const response = await apiClient.put(`/avatar/${avatarIdFromPath}/background`, payload);
     return response.data;
   } catch (error) {
     console.error('Error generating background:', error.response ? error.response.data : error.message);
@@ -63,12 +64,10 @@ export const getTaskStatus = async (aigeTaskId) => {
     return response.data;
   } catch (error) {
     console.error('Error fetching task status:', error.response ? error.response.data : error.message);
-    // Do not throw for polling, allow component to handle not found or error statuses
-    // If status is 404, it means task_id might not be in DB yet, or an error.
     if (error.response && error.response.status === 404) {
-        return { aige_task_id: aigeTaskId, status: 'not_found' };
+        return { aige_task_id: aigeTaskId, status: 'not_found', error: 'Task ID not found or processing not initiated.' };
     }
-    // For other errors, let's return a generic error status
-    return { aige_task_id: aigeTaskId, status: 'error_fetching_status' };
+    // For other errors, let's return a generic error status with the message
+    return { aige_task_id: aigeTaskId, status: 'error_fetching_status', error: error.message };
   }
 };

@@ -1,38 +1,144 @@
+/* aige-frontend/src/App.css */
+body {
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+  color: #333;
+}
+
 .App {
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
 .App-header {
   background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+  padding: 20px;
   color: white;
+  margin-bottom: 20px;
 }
 
-.App-link {
-  color: #61dafb;
+.App-header h1 {
+  margin: 0;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+.App-main {
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column; /* Stack step sections vertically */
+  align-items: center; /* Center step sections */
+}
+
+.step-section {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  width: 100%;
+  max-width: 700px; /* Max width for content sections */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Styling for components (can be in their own CSS or here) */
+.step-container, .task-status-container {
+  background-color: #fff; /* Ensure white background if not already set */
+  padding: 15px;
+  margin-top: 15px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  text-align: left; /* Align text to left within containers */
+}
+
+.step-container h2, .task-status-container h3 {
+  margin-top: 0;
+  color: #0056b3; /* A theme color for headings */
+}
+
+.step-container.disabled-step p {
+  color: #777;
+  font-style: italic;
+}
+
+
+input[type="text"], select {
+  width: calc(100% - 22px); /* Full width minus padding and border */
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+button {
+  background-color: #007bff;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s ease-in-out;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.debug-section {
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  padding: 10px;
+  margin-top: 15px;
+  border-radius: 4px;
+  max-height: 200px; /* Limit height for scrollable debug info */
+  overflow-y: auto; /* Add scroll for overflow */
+}
+
+.debug-section h3 {
+  margin-top: 0;
+  font-size: 1.1em;
+  color: #333;
+}
+
+.debug-section pre {
+  white-space: pre-wrap; /* Allow text wrapping */
+  word-wrap: break-word; /* Break long words */
+  font-size: 0.9em;
+  color: #555;
+}
+
+.image-preview img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.error-message {
+  color: #D8000C; /* Red for errors */
+  background-color: #FFD2D2; /* Light red background */
+  border: 1px solid #D8000C;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+/* Basic responsive design for main content area */
+@media (min-width: 768px) {
+  .App-main {
+    /* Could change to row layout on wider screens if desired */
+    /* flex-direction: row;
+    justify-content: space-around;
+    align-items: flex-start; */
   }
-  to {
-    transform: rotate(360deg);
-  }
+  /* .step-section {
+    width: 45%;
+  } */
 }

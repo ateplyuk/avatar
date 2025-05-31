@@ -13,6 +13,7 @@ const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [generatedImageReadUrl, setGeneratedImageReadUrl] = useState('');
   const [imageLoadError, setImageLoadError] = useState(false); // New state
+  const [refreshKey, setRefreshKey] = useState(0); // Для обновления картинки
 
   // Reset imageLoadError when generatedImageReadUrl changes
   useEffect(() => {
@@ -47,8 +48,8 @@ const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
     try {
       const response = await api.generateBackground(avatarId, payload);
       setResponseBody(response);
-      if (response && response.readUrl) {
-        setGeneratedImageReadUrl(response.readUrl);
+      if (response && payload.readUrl) {
+        setGeneratedImageReadUrl(payload.readUrl);
       }
       const currentTaskID = response.aige_task_id || response.taskId || null;
       if (onBackgroundSuccess) {
@@ -147,19 +148,29 @@ const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
 
       <div className="image-preview-column">
         <h3>Generated Background Preview</h3>
-        {generatedImageReadUrl && !imageLoadError ? (
-          <img
-            src={generatedImageReadUrl}
-            alt="Generated Background"
-            className="result-image"
-            onError={handleImageError}
-            onLoad={handleImageLoad}
-          />
+        {generatedImageReadUrl ? (
+          <>
+            {!imageLoadError ? (
+              <img
+                key={refreshKey}
+                src={generatedImageReadUrl}
+                alt="Generated Background"
+                className="result-image"
+                onError={handleImageError}
+                onLoad={handleImageLoad}
+              />
+            ) : (
+              <div className="image-placeholder">
+                Error loading image. Check console or URL.
+              </div>
+            )}
+            <button style={{marginTop: '10px'}} onClick={() => setRefreshKey(prev => prev + 1)}>
+              Обновить картинку
+            </button>
+          </>
         ) : (
           <div className="image-placeholder">
-            {imageLoadError
-              ? 'Error loading image. Check console or URL.'
-              : 'Your generated background will appear here.'}
+            Your generated background will appear here.
           </div>
         )}
       </div>

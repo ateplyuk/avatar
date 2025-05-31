@@ -15,6 +15,7 @@ const Step1Avatar = ({ onAvatarSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [generatedImageReadUrl, setGeneratedImageReadUrl] = useState('');
   const [imageLoadError, setImageLoadError] = useState(false); // New state for image load errors
+  const [refreshKey, setRefreshKey] = useState(0); // Для обновления картинки
 
   useEffect(() => {
     setAvatarId(uuidv4());
@@ -48,15 +49,15 @@ const Step1Avatar = ({ onAvatarSuccess }) => {
     try {
       const response = await api.generateAvatar(payload);
       setResponseBody(response);
-      if (response && response.readUrl) {
-        setGeneratedImageReadUrl(response.readUrl);
-      }
+      if (response && payload.readUrl) {
+        setGeneratedImageReadUrl(payload.readUrl);
+      } 
       const currentTaskID = response.aige_task_id || response.taskId || null;
       if (onAvatarSuccess) {
         onAvatarSuccess({
           avatarId: avatarId,
           aigeTaskId: currentTaskID,
-          readUrl: response.readUrl
+          readUrl: response.readUrl || payload.readUrl
         });
       }
     } catch (err) {
@@ -140,19 +141,29 @@ const Step1Avatar = ({ onAvatarSuccess }) => {
 
       <div className="image-preview-column">
         <h3>Generated Avatar Preview</h3>
-        {generatedImageReadUrl && !imageLoadError ? (
-          <img
-            src={generatedImageReadUrl}
-            alt="Generated Avatar"
-            className="result-image"
-            onError={handleImageError}
-            onLoad={handleImageLoad}
-          />
+        {generatedImageReadUrl ? (
+          <>
+            {!imageLoadError ? (
+              <img
+                key={refreshKey}
+                src={generatedImageReadUrl}
+                alt="Generated Avatar"
+                className="result-image"
+                onError={handleImageError}
+                onLoad={handleImageLoad}
+              />
+            ) : (
+              <div className="image-placeholder">
+                Error loading image. Check console or URL.
+              </div>
+            )}
+            <button style={{marginTop: '10px'}} onClick={() => setRefreshKey(prev => prev + 1)}>
+              Обновить картинку
+            </button>
+          </>
         ) : (
           <div className="image-placeholder">
-            {imageLoadError
-              ? 'Error loading image. Check console or URL.'
-              : 'Your generated avatar will appear here.'}
+            Your generated avatar will appear here.
           </div>
         )}
       </div>

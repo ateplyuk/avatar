@@ -1,6 +1,6 @@
 import asyncio
 from fastapi import APIRouter, HTTPException, BackgroundTasks
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 import logging
 from uuid import uuid4
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class AvatarGenerationRequest(BaseModel):
     prompt: str
     source_images: List[str] # Assuming these are pre-signed URLs or base64 encoded strings. Currently unused by fal.ai calls.
-    resolution: str
+    aspect_ratio: Optional[str] = "1:1"  # Значение по умолчанию
     avatar_id: str
     writeUrl: str
     readUrl: str 
@@ -45,15 +45,6 @@ async def run_avatar_generation_task(task_id: str, request_data: AvatarGeneratio
         task_status_db[task_id] = "processing_avatar_model"
         logger.info(f"Task {task_id}: Calling Fal.ai model {AVATAR_GENERATION_MODEL}...")
 
-        # Map resolution: "256" -> "256x256"
-        image_size_str = f"{request_data.resolution}x{request_data.resolution}"
-        # For imagen4, common resolutions might be "1024x1024", "2048x2048"
-        # The model might have specific supported sizes, "SQUARE_HD" was an example for another model.
-        # For now, we use what's provided, but this might need adjustment based on imagen4 capabilities.
-        # Fal docs for imagen4 show aspect_ratio and num_images, not image_size directly in example.
-        # Let's use aspect_ratio and assume resolution implies a square image.
-        # Defaulting to "1:1" aspect ratio. The 'resolution' field might be used to pick a size from aspect_ratio variants if supported.
-        # For now, the example used 'prompt' as the main argument.
         # The user's example for imagen4:
         # arguments={
         #     "prompt": prompt, "image_size": image_size, "num_inference_steps": 2,
@@ -65,21 +56,13 @@ async def run_avatar_generation_task(task_id: str, request_data: AvatarGeneratio
 
         avatar_model_args = {
             "prompt": request_data.prompt,
-            # "image_size": {"width": int(request_data.resolution), "height": int(request_data.resolution)}, # Fal expects object for image_size for some models
-            "aspect_ratio": "1:1", # Assuming square based on resolution
+            "aspect_ratio": request_data.aspect_ratio,
             "num_inference_steps": 10, # Increased from 2 for potentially better quality
             "guidance_scale": 3.5,
             "num_images": 1,
             "safety_tolerance": "2.0", # String as per some fal examples for tolerance
             "output_format": "jpeg" # imagen4 produces jpeg or png
         }
-        # If 'resolution' is small like 256, it might be better to use a model optimized for that or upscale later.
-        # For imagen4, it's a high-res model. Let's assume the user provides a reasonable resolution like 1024.
-        # The 'image_size' parameter might be specific to certain fal client versions or models.
-        # The fal.ai documentation for imagen4/preview API lists 'aspect_ratio' not 'image_size'.
-        # Let's remove image_size if aspect_ratio is used and resolution is implicitly handled.
-        # If resolution is "256", it implies a 256x256 image with 1:1 aspect ratio.
-        # The model might select the closest supported resolution for the aspect ratio.
 
         generated_image_result = await asyncio.to_thread(
             fal_client.subscribe,

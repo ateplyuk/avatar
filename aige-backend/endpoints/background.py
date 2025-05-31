@@ -1,5 +1,6 @@
 import asyncio
 from fastapi import APIRouter, HTTPException, BackgroundTasks
+from typing import Optional
 from pydantic import BaseModel
 from uuid import uuid4
 import logging
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 # Pydantic Models
 class BackgroundGenerationRequest(BaseModel):
     prompt: str
-    resolution: str # e.g., "256", "512", "1024"
+    aspect_ratio: Optional[str] = "1:1"  # Значение по умолчанию
     writeUrl: str
     readUrl: str 
     avatar_id: str # From request body, validated against path param
@@ -47,24 +48,14 @@ async def run_background_generation_task(task_id: str, avatar_id_from_path: str,
         task_status_db[task_id] = "processing_background_model"
         logger.info(f"Task {task_id}: Calling Fal.ai model {BACKGROUND_GENERATION_MODEL}...")
 
-        # User's example for flux/schnell:
-        # arguments={
-        #     "prompt": prompt, "image_size": image_size, "num_inference_steps": 2,
-        #     "guidance_scale": 3.5, "num_images": 1, "safety_tolerance": "2",
-        #     "output_format": "jpeg"
-        # }
-        # Fal docs for flux/schnell may use width/height or image_size string.
-        # Assuming image_size "widthxheight" format is acceptable or internally handled by the model based on common practice.
-        image_size_str = f"{request_data.resolution}x{request_data.resolution}"
-
         background_model_args = {
             "prompt": request_data.prompt,
-            "image_size": image_size_str, # e.g., "1024x1024"
-            "num_inference_steps": 8, # Increased from 2 for potentially better quality
+            "aspect_ratio": request_data.aspect_ratio,
+            "num_inference_steps": 10, # Increased from 2 for potentially better quality
             "guidance_scale": 3.5,
             "num_images": 1,
-            "safety_tolerance": "2.0", # Using string "2.0"
-            "output_format": "jpeg"
+            "safety_tolerance": "2.0", # String as per some fal examples for tolerance
+            "output_format": "jpeg" # imagen4 produces jpeg or png
         }
         
         generated_image_result = await asyncio.to_thread(

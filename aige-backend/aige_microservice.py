@@ -3,7 +3,6 @@ from fastapi import FastAPI, APIRouter
 import logging
 from .storage import task_status_db
 import sys
-from fastapi.middleware.cors import CORSMiddleware
 
 # Configure basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -11,14 +10,6 @@ logger = logging.getLogger(__name__)
 
 # Create a FastAPI app instance
 app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # или ["http://localhost:3000"] — адрес вашего фронта
-    allow_credentials=True,
-    allow_methods=["*"],  # или ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    allow_headers=["*"],
-)
 
 # In-memory dictionary to store task statuses
 # task_status_db = {}

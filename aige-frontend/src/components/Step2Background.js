@@ -1,14 +1,15 @@
 // aige-frontend/src/components/Step2Background.js
 import React, { useState } from 'react';
 import * as api from '../services/api';
-import { ASPECT_RATIOS, DEFAULT_ASPECT_RATIO } from '../config';
+import { ASPECT_RATIOS, DEFAULT_ASPECT_RATIO, BACKGROUND_URLS, DEFAULT_SOURCE_IMAGES } from '../config'; // Added BACKGROUND_URLS, DEFAULT_SOURCE_IMAGES
 
 const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
   const [prompt, setPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState(DEFAULT_ASPECT_RATIO);
   const [requestBody, setRequestBody] = useState(null);
   const [responseBody, setResponseBody] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(''); // For general errors or string messages
+  const [errorObject, setErrorObject] = useState(null); // For detailed error object from API
   const [isLoading, setIsLoading] = useState(false);
   const [generatedImageReadUrl, setGeneratedImageReadUrl] = useState('');
 
@@ -21,37 +22,45 @@ const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
 
     setIsLoading(true);
     setError('');
+    setErrorObject(null); // Clear previous detailed error
     setResponseBody(null);
     setGeneratedImageReadUrl('');
 
     const payload = {
       prompt,
       aspect_ratio: aspectRatio,
-      avatar_id: avatarId, // Backend expects avatar_id in body as well for validation
+      avatar_id: avatarId,
+      writeUrl: BACKGROUND_URLS.writeUrl, // Use from config
+      readUrl: BACKGROUND_URLS.readUrl,   // Use from config
+      source_images: DEFAULT_SOURCE_IMAGES, // Use from config (likely empty, but required)
     };
     setRequestBody(payload);
 
     try {
-      const response = await api.generateBackground(avatarId, payload); // avatarId also in path
+      const response = await api.generateBackground(avatarId, payload);
       setResponseBody(response);
+      // The backend response contains the actual readUrl for the *generated* image
       if (response && response.readUrl) {
         setGeneratedImageReadUrl(response.readUrl);
       }
 
-      const currentTaskID = response.aige_task_id || response.taskId || null; // Adapt to actual response field
+      const currentTaskID = response.aige_task_id || response.taskId || null;
 
       if (onBackgroundSuccess) {
         onBackgroundSuccess({
           aigeTaskId: currentTaskID,
-          readUrl: response.readUrl
+          readUrl: response.readUrl // Pass the actual readUrl of the generated image
         });
       }
 
     } catch (err) {
-      setError(err.message || 'Failed to generate background.');
-      // If the error object (err) has a 'data' property (like from Axios error.response), use that.
-      // Otherwise, use the err object itself (which might be a simple Error).
-      setResponseBody(err.data || err);
+      // err should now be the detailed error object from the backend
+      console.error("Error in Step2Background handleSubmit:", err);
+      // err might be an object (from backend) or an Error instance (network issue)
+      const errorMessage = err.message || (typeof err === 'string' ? err : 'Failed to generate background. Check console/API error details.');
+      setError(errorMessage);
+      setErrorObject(err);
+      setResponseBody(null);
     } finally {
       setIsLoading(false);
     }
@@ -105,9 +114,22 @@ const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
       )}
 
       {isLoading && <p>Loading image...</p>}
-      {error && <p className="error-message">Error: {error}</p>}
 
-      {responseBody && (
+      {/* Display generic error message if errorObject is not providing a specific message */}
+      {error && (!errorObject || typeof errorObject.message !== 'string') && <p className="error-message">Error: {error}</p>}
+
+      {/* Display detailed error object if available */}
+      {errorObject && (
+        <div className="debug-section error-message">
+          <h3>API Error Details:</h3>
+          {/* Attempt to provide a primary message from the error object if possible */}
+          {errorObject.message && typeof errorObject.message === 'string' && <p>{errorObject.message}</p>}
+          <pre>{JSON.stringify(errorObject, null, 2)}</pre>
+        </div>
+      )}
+
+      {/* Display response body only on success now */}
+      {responseBody && !errorObject && (
         <div className="debug-section">
           <h3>Response Body:</h3>
           <pre>{JSON.stringify(responseBody, null, 2)}</pre>

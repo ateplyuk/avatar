@@ -176,18 +176,21 @@ button:disabled {
 
 .result-image { /* Specifically for the image in the preview column */
   max-width: 100%; /* Ensure image is responsive within its column */
-  height: auto;
+  height: auto; /* Maintain aspect ratio */
   border: 1px solid #ddd;
   border-radius: 4px;
   background-color: #fff; /* If image has transparency */
-  max-height: 400px; /* Adjust as needed for "medium" */
+  max-height: 800px; /* Doubled from 400px */
   object-fit: contain; /* Ensures the whole image is visible, might add whitespace */
+  display: block; /* Can help with consistent layout, removes extra space under inline images */
+  margin-left: auto; /* Center image if its actual width is less than column width */
+  margin-right: auto;
 }
 
 .image-placeholder {
   width: 100%;
-  /* max-height: 400px; /* Match result-image max-height */
-  min-height: 200px; /* Minimum height to make placeholder noticeable */
+  height: 400px; /* Significantly increased from min-height 200px, and provides a fixed large size */
+  max-height: 800px; /* Consistent with result-image max-height */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -195,7 +198,7 @@ button:disabled {
   border: 2px dashed #ccc;
   border-radius: 4px;
   color: #777;
-  font-size: 0.9em;
+  font-size: 1em; /* Slightly larger text for a larger box */
   padding: 20px;
   box-sizing: border-box;
 }

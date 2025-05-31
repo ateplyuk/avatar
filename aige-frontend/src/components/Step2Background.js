@@ -1,5 +1,5 @@
 // aige-frontend/src/components/Step2Background.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Added useEffect
 import * as api from '../services/api';
 import { ASPECT_RATIOS, DEFAULT_ASPECT_RATIO, BACKGROUND_URLS, DEFAULT_SOURCE_IMAGES } from '../config';
 
@@ -12,6 +12,12 @@ const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
   const [errorObject, setErrorObject] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedImageReadUrl, setGeneratedImageReadUrl] = useState('');
+  const [imageLoadError, setImageLoadError] = useState(false); // New state
+
+  // Reset imageLoadError when generatedImageReadUrl changes
+  useEffect(() => {
+    setImageLoadError(false);
+  }, [generatedImageReadUrl]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -24,6 +30,7 @@ const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
     setError('');
     setErrorObject(null);
     setResponseBody(null);
+    setImageLoadError(false); // Reset image load error on new submission
     // Keep previous image visible or clear it:
     // setGeneratedImageReadUrl('');
 
@@ -61,9 +68,18 @@ const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
     }
   };
 
+  const handleImageError = () => {
+    console.error('Error loading image:', generatedImageReadUrl);
+    setImageLoadError(true);
+  };
+
+  const handleImageLoad = () => {
+    setImageLoadError(false);
+  };
+
   if (!avatarId) {
     return (
-      <div className="step-container disabled-step"> {/* Keep this simple if disabled */}
+      <div className="step-container disabled-step">
         <h2>Step 2: Generate Background</h2>
         <p>Please complete Step 1 to generate an avatar first. Avatar ID is required.</p>
       </div>
@@ -71,9 +87,8 @@ const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
   }
 
   return (
-    // Apply the same layout classes as Step1Avatar
     <div className="step-container step-layout-container">
-      <div className="form-and-debug-column"> {/* Left column */}
+      <div className="form-and-debug-column">
         <h2>Step 2: Generate Background (for Avatar ID: {avatarId})</h2>
         <form onSubmit={handleSubmit}>
           <div>
@@ -130,12 +145,22 @@ const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
         )}
       </div>
 
-      <div className="image-preview-column"> {/* Right column */}
+      <div className="image-preview-column">
         <h3>Generated Background Preview</h3>
-        {generatedImageReadUrl ? (
-          <img src={generatedImageReadUrl} alt="Generated Background" className="result-image" />
+        {generatedImageReadUrl && !imageLoadError ? (
+          <img
+            src={generatedImageReadUrl}
+            alt="Generated Background"
+            className="result-image"
+            onError={handleImageError}
+            onLoad={handleImageLoad}
+          />
         ) : (
-          <div className="image-placeholder">Your generated background will appear here.</div>
+          <div className="image-placeholder">
+            {imageLoadError
+              ? 'Error loading image. Check console or URL.'
+              : 'Your generated background will appear here.'}
+          </div>
         )}
       </div>
     </div>

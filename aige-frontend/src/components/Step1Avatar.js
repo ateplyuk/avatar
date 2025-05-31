@@ -14,10 +14,16 @@ const Step1Avatar = ({ onAvatarSuccess }) => {
   const [errorObject, setErrorObject] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedImageReadUrl, setGeneratedImageReadUrl] = useState('');
+  const [imageLoadError, setImageLoadError] = useState(false); // New state for image load errors
 
   useEffect(() => {
     setAvatarId(uuidv4());
   }, []);
+
+  // Reset imageLoadError when generatedImageReadUrl changes
+  useEffect(() => {
+    setImageLoadError(false);
+  }, [generatedImageReadUrl]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -25,6 +31,7 @@ const Step1Avatar = ({ onAvatarSuccess }) => {
     setError('');
     setErrorObject(null);
     setResponseBody(null);
+    setImageLoadError(false); // Reset image load error on new submission
     // Keep previous image visible during generation for better UX, or clear it:
     // setGeneratedImageReadUrl('');
 
@@ -63,9 +70,18 @@ const Step1Avatar = ({ onAvatarSuccess }) => {
     }
   };
 
+  const handleImageError = () => {
+    console.error('Error loading image:', generatedImageReadUrl);
+    setImageLoadError(true);
+  };
+
+  const handleImageLoad = () => {
+    setImageLoadError(false); // Reset error on successful load
+  };
+
   return (
-    <div className="step-container step-layout-container"> {/* Added step-layout-container */}
-      <div className="form-and-debug-column"> {/* Left column */}
+    <div className="step-container step-layout-container">
+      <div className="form-and-debug-column">
         <h2>Step 1: Generate Avatar</h2>
         <form onSubmit={handleSubmit}>
           <div>
@@ -122,12 +138,22 @@ const Step1Avatar = ({ onAvatarSuccess }) => {
         )}
       </div>
 
-      <div className="image-preview-column"> {/* Right column */}
+      <div className="image-preview-column">
         <h3>Generated Avatar Preview</h3>
-        {generatedImageReadUrl ? (
-          <img src={generatedImageReadUrl} alt="Generated Avatar" className="result-image" />
+        {generatedImageReadUrl && !imageLoadError ? (
+          <img
+            src={generatedImageReadUrl}
+            alt="Generated Avatar"
+            className="result-image"
+            onError={handleImageError}
+            onLoad={handleImageLoad}
+          />
         ) : (
-          <div className="image-placeholder">Your generated avatar will appear here.</div>
+          <div className="image-placeholder">
+            {imageLoadError
+              ? 'Error loading image. Check console or URL.'
+              : 'Your generated avatar will appear here.'}
+          </div>
         )}
       </div>
     </div>

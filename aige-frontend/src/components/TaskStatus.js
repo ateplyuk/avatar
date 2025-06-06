@@ -33,7 +33,7 @@ const TaskStatus = ({ aigeTaskId, label = "Task Status" }) => {
         setStatusInfo(result);
         setError(''); // Clear component-level error on successful fetch
 
-        const terminalStatuses = ['completed', 'succeeded', 'failed', 'error', 'not_found', 'error_fetching_status'];
+        const terminalStatuses = ['done', 'completed', 'succeeded', 'failed', 'error', 'not_found', 'error_fetching_status'];
         if (result && terminalStatuses.includes(result.status)) {
           if (componentIsMounted) setIsPolling(false);
           if (intervalId) clearInterval(intervalId);

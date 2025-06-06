@@ -12,7 +12,7 @@ async def upload_image_to_presigned_url(url: str, image_data: bytes, content_typ
         image_data: The image data in bytes.
         content_type: The content type of the image (e.g., "image/png", "image/jpeg").
     """
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         try:
             logger.info(f"Attempting to upload image ({len(image_data)} bytes, type: {content_type}) to {url[:100]}...") # Log only part of URL
             

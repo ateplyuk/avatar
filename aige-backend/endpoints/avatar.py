@@ -42,94 +42,92 @@ async def run_avatar_generation_task(task_id: str, request_data: AvatarGeneratio
     setup_fal_key() # Ensure FAL_KEY is set
 
     try:
-        task_status_db[task_id] = "processing_avatar_model"
-        logger.info(f"Task {task_id}: Calling Fal.ai model {AVATAR_GENERATION_MODEL}...")
+        try:
+            task_status_db[task_id] = "processing_avatar_model"
+            logger.info(f"Task {task_id}: Calling Fal.ai model {AVATAR_GENERATION_MODEL}...")
 
-        # The user's example for imagen4:
-        # arguments={
-        #     "prompt": prompt, "image_size": image_size, "num_inference_steps": 2,
-        #     "guidance_scale": 3.5, "num_images": 1, "safety_tolerance": "2",
-        #     "aspect_ratio": "1:1", "output_format": "jpeg"
-        # }
-        # The API docs for imagen4 had: prompt, negative_prompt, aspect_ratio, num_images, seed
-        # Let's stick to user's example for arguments for now.
+            # The user's example for imagen4:
+            # arguments={
+            #     "prompt": prompt, "image_size": image_size, "num_inference_steps": 2,
+            #     "guidance_scale": 3.5, "num_images": 1, "safety_tolerance": "2",
+            #     "aspect_ratio": "1:1", "output_format": "jpeg"
+            # }
+            # The API docs for imagen4 had: prompt, negative_prompt, aspect_ratio, num_images, seed
+            # Let's stick to user's example for arguments for now.
 
-        avatar_model_args = {
-            "prompt": request_data.prompt,
-            "aspect_ratio": request_data.aspect_ratio,
-            "num_inference_steps": 10, # Increased from 2 for potentially better quality
-            "guidance_scale": 3.5,
-            "num_images": 1,
-            "safety_tolerance": "2.0", # String as per some fal examples for tolerance
-            "output_format": "jpeg" # imagen4 produces jpeg or png
-        }
+            avatar_model_args = {
+                "prompt": request_data.prompt,
+                "aspect_ratio": request_data.aspect_ratio,
+                "num_inference_steps": 10, # Increased from 2 for potentially better quality
+                "guidance_scale": 3.5,
+                "num_images": 1,
+                "safety_tolerance": "2.0", # String as per some fal examples for tolerance
+                "output_format": "jpeg" # imagen4 produces jpeg or png
+            }
 
-        generated_image_result = await asyncio.to_thread(
-            fal_client.subscribe,
-            AVATAR_GENERATION_MODEL,
-            arguments=avatar_model_args,
-            with_logs=True,
-            on_queue_update=lambda update: on_fal_queue_update(update, task_id, "avatar_generation")
-        )
+            generated_image_result = await asyncio.to_thread(
+                fal_client.subscribe,
+                AVATAR_GENERATION_MODEL,
+                arguments=avatar_model_args,
+                with_logs=True,
+                on_queue_update=lambda update: on_fal_queue_update(update, task_id, "avatar_generation")
+            )
 
-        if not generated_image_result or not generated_image_result.get("images"):
-            raise Exception("Avatar generation failed or returned no image.")
-        
-        # Assuming the first image is the one we want
-        generated_image_url = generated_image_result["images"][0]["url"]
-        logger.info(f"Task {task_id}: Fal.ai model {AVATAR_GENERATION_MODEL} completed. Image URL: {generated_image_url}")
-        
-        task_status_db[task_id] = "processing_background_removal"
-        logger.info(f"Task {task_id}: Calling Fal.ai model {BACKGROUND_REMOVAL_MODEL} for image: {generated_image_url}")
+            if not generated_image_result or not generated_image_result.get("images"):
+                raise Exception("Avatar generation failed or returned no image.")
+            
+            # Assuming the first image is the one we want
+            generated_image_url = generated_image_result["images"][0]["url"]
+            logger.info(f"Task {task_id}: Fal.ai model {AVATAR_GENERATION_MODEL} completed. Image URL: {generated_image_url}")
+            
+            task_status_db[task_id] = "processing_background_removal"
+            logger.info(f"Task {task_id}: Calling Fal.ai model {BACKGROUND_REMOVAL_MODEL} for image: {generated_image_url}")
 
-        # User's example for rembg:
-        # arguments={ "image_url": uploaded_url, "output_format": "png" }
-        bg_removal_args = {
-            "image_url": generated_image_url,
-            "output_format": "png" # Need PNG for transparency
-        }
-        
-        removed_bg_image_result = await asyncio.to_thread(
-            fal_client.subscribe,
-            BACKGROUND_REMOVAL_MODEL,
-            arguments=bg_removal_args,
-            with_logs=True,
-            on_queue_update=lambda update: on_fal_queue_update(update, task_id, "background_removal")
-        )
+            # User's example for rembg:
+            # arguments={ "image_url": uploaded_url, "output_format": "png" }
+            bg_removal_args = {
+                "image_url": generated_image_url,
+                "output_format": "png" # Need PNG for transparency
+            }
+            
+            removed_bg_image_result = await asyncio.to_thread(
+                fal_client.subscribe,
+                BACKGROUND_REMOVAL_MODEL,
+                arguments=bg_removal_args,
+                with_logs=True,
+                on_queue_update=lambda update: on_fal_queue_update(update, task_id, "background_removal")
+            )
 
-        if not removed_bg_image_result or not removed_bg_image_result.get("image"): # rembg returns "image" key
-             raise Exception("Background removal failed or returned no image.")
+            if not removed_bg_image_result or not removed_bg_image_result.get("image"): # rembg returns "image" key
+                 raise Exception("Background removal failed or returned no image.")
 
-        final_image_url = removed_bg_image_result["image"]["url"] # rembg output structure
-        logger.info(f"Task {task_id}: Fal.ai model {BACKGROUND_REMOVAL_MODEL} completed. Final image URL: {final_image_url}")
+            final_image_url = removed_bg_image_result["image"]["url"] # rembg output structure
+            logger.info(f"Task {task_id}: Fal.ai model {BACKGROUND_REMOVAL_MODEL} completed. Final image URL: {final_image_url}")
 
-        task_status_db[task_id] = "uploading_image"
-        logger.info(f"Task {task_id}: Downloading image from {final_image_url} for upload.")
-        
-        async with httpx.AsyncClient() as client:
-            response = await client.get(final_image_url)
-            response.raise_for_status() # Ensure we got a 2xx response
-            image_data = response.content
-            content_type = response.headers.get("Content-Type", "image/png") # Get content type, default to png
+            task_status_db[task_id] = "uploading_image"
+            logger.info(f"Task {task_id}: Downloading image from {final_image_url} for upload.")
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.get(final_image_url)
+                response.raise_for_status() # Ensure we got a 2xx response
+                image_data = response.content
+                content_type = response.headers.get("Content-Type", "image/png") # Get content type, default to png
 
-        logger.info(f"Task {task_id}: Uploading image to {request_data.writeUrl} (Content-Type: {content_type})")
-        
-        # This function will be fully implemented in a later step
-        await upload_image_to_presigned_url(request_data.writeUrl, image_data, content_type)
-        
-        logger.info(f"Task {task_id}: Upload to {request_data.writeUrl} completed.")
-        task_status_db[task_id] = "done"
-        logger.info(f"Avatar generation task {task_id} completed successfully. Final image accessible via readUrl: {request_data.readUrl}")
-
-    except fal_client.FalServerException as e:
-        logger.error(f"FalServerException in avatar generation task {task_id}: {e.message} (status {e.status_code})", exc_info=True)
-        task_status_db[task_id] = "error"
-    except httpx.HTTPStatusError as e:
-        logger.error(f"HTTPStatusError during image download/upload for task {task_id}: {e.response.status_code} - {e.response.text}", exc_info=True)
-        task_status_db[task_id] = "error"
-    except Exception as e:
-        logger.error(f"Generic error in avatar generation task {task_id}: {e}", exc_info=True)
-        task_status_db[task_id] = "error"
+            logger.info(f"Task {task_id}: Uploading image to {request_data.writeUrl} (Content-Type: {content_type})")
+            
+            # This function will be fully implemented in a later step
+            await upload_image_to_presigned_url(request_data.writeUrl, image_data, content_type)
+            
+            logger.info(f"Task {task_id}: Upload to {request_data.writeUrl} completed.")
+            task_status_db[task_id] = "done"
+            logger.info(f"Avatar generation task {task_id} completed successfully. Final image accessible via readUrl: {request_data.readUrl}")
+        except Exception as e:
+            logger.error(f"Error in avatar generation task {task_id}: {e}", exc_info=True)
+            task_status_db[task_id] = "error"
+            raise
+    except Exception:
+        # Уже установлен статус error, просто выходим
+        pass
 
 # API Endpoint
 @router.post("", response_model=AvatarGenerationResponse) # Changed from "/avatar" to "" as prefix is in main router

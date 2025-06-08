@@ -48,7 +48,11 @@ const Step1Avatar = ({ onAvatarSuccess }) => {
 
     try {
       const response = await api.generateAvatar(payload);
-      setResponseBody(response);
+      // Only show aige_task_id and avatar_id in response body
+      setResponseBody({
+        aige_task_id: response.aige_task_id,
+        avatar_id: response.avatar_id
+      });
       if (response && payload.readUrl) {
         setGeneratedImageReadUrl(payload.readUrl);
       } 

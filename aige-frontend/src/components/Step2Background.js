@@ -1,7 +1,7 @@
 // aige-frontend/src/components/Step2Background.js
 import React, { useState, useEffect } from 'react'; // Added useEffect
 import * as api from '../services/api';
-import { ASPECT_RATIOS, DEFAULT_ASPECT_RATIO, BACKGROUND_URLS, DEFAULT_SOURCE_IMAGES } from '../config';
+import { ASPECT_RATIOS, DEFAULT_ASPECT_RATIO, BACKGROUND_URLS } from '../config';
 
 const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
   const [prompt, setPrompt] = useState('');
@@ -40,8 +40,7 @@ const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
       aspect_ratio: aspectRatio,
       avatar_id: avatarId,
       writeUrl: BACKGROUND_URLS.writeUrl,
-      readUrl: BACKGROUND_URLS.readUrl,
-      source_images: DEFAULT_SOURCE_IMAGES,
+      readUrl: BACKGROUND_URLS.readUrl
     };
     setRequestBody(payload);
 

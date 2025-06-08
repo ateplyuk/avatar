@@ -43,13 +43,12 @@ export const generateAvatar = async (avatarData) => {
  * @param {string} backgroundData.avatar_id - The avatar_id (repeated in body for backend validation).
  * @param {string} backgroundData.writeUrl - The pre-signed URL to write the result.
  * @param {string} backgroundData.readUrl - The URL to read the result from.
- * @param {string[]} backgroundData.source_images - Array of source image URLs.
  * @returns {Promise<object>} The response from the API.
  */
 export const generateBackground = async (avatarIdFromPath, backgroundData) => {
   // Destructure for clarity and to ensure all required fields are present
-  const { prompt, aspect_ratio, avatar_id, writeUrl, readUrl, source_images } = backgroundData;
-  const payload = { prompt, aspect_ratio, avatar_id, writeUrl, readUrl, source_images };
+  const { prompt, aspect_ratio, avatar_id, writeUrl, readUrl } = backgroundData;
+  const payload = { prompt, aspect_ratio, avatar_id, writeUrl, readUrl };
   try {
     const response = await apiClient.put(`/avatar/${avatarIdFromPath}/background`, payload);
     return response.data;

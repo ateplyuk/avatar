@@ -1,0 +1,87 @@
+# Project Rules and Patterns
+
+## Code Organization
+### Backend
+- Use FastAPI for all API endpoints
+- Organize endpoints in separate router files
+- Keep main application file clean and minimal
+- Use in-memory storage for task status
+
+### Frontend
+- Use React functional components
+- Organize components by feature
+- Keep API calls in separate service files
+- Use Material-UI for consistent styling
+
+## Development Patterns
+### Backend
+- Follow RESTful API design principles
+- Implement proper error handling
+- Use async/await for API endpoints
+- Maintain clear logging
+
+### Frontend
+- Use React hooks for state management
+- Implement proper loading states
+- Handle API errors gracefully
+- Use TypeScript for type safety
+
+## API Integration
+- Use Axios for API calls
+- Implement request/response interceptors
+- Handle common error cases
+- Maintain consistent status code handling
+- Use proper loading states for async operations
+
+## Project Preferences
+- Prefer modular code organization
+- Use type hints and Pydantic models
+- Keep documentation up to date
+- Follow Python best practices
+- Use Material-UI components
+- Implement responsive design
+
+## Known Challenges
+- Memory-based storage limitations
+- External service dependencies
+- CORS configuration requirements
+- Task status management complexity
+- Frontend-backend state synchronization
+- API error handling consistency
+
+## Tool Usage
+### Backend
+- FastAPI for API development
+- Uvicorn for server
+- Pydantic for data validation
+- Fal-client for image generation
+
+### Frontend
+- React for UI development
+- Vite for build tool
+- Material-UI for components
+- Axios for API calls
+
+## Evolution Notes
+- Started with basic FastAPI setup
+- Added router-based organization
+- Implemented CORS middleware
+- Integrated external services
+- Added React frontend
+- Implemented Material-UI
+- Added API client layer
+- Improved error handling
+
+## API Status Codes
+- 200: Success
+- 201: Created
+- 400: Bad Request
+- 404: Not Found
+- 500: Internal Server Error
+
+## Frontend-Backend Communication
+- Use consistent error handling
+- Implement proper loading states
+- Handle API timeouts
+- Maintain session state
+- Implement retry mechanisms 

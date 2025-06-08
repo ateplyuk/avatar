@@ -74,7 +74,7 @@
     {
       "prompt": "string",
       "source_images": ["string"],  // Pre-signed URLs or base64 encoded strings
-      "aspect_ratio": "string",     // Optional, default "1:1"
+      "aspect_ratio": "string",     // Optional, default "1:1", allowed values 1:1, 16:9, 9:16, 3:4, 4:3
       "avatar_id": "string",
       "writeUrl": "string",         // Pre-signed URL for uploading the result
       "readUrl": "string"           // URL for reading the result
@@ -84,8 +84,7 @@
     ```json
     {
       "aige_task_id": "string",
-      "avatar_id": "string",
-      "status": "processing"
+      "avatar_id": "string"
     }
     ```
   - Status Codes:
@@ -99,7 +98,7 @@
     ```json
     {
       "prompt": "string",
-      "aspect_ratio": "string",     // Optional, default "1:1"
+      "aspect_ratio": "string",     // Optional, default "1:1", allowed values 1:1, 16:9, 9:16, 3:4, 4:3
       "writeUrl": "string",         // Pre-signed URL for uploading the result
       "readUrl": "string",          // URL for reading the result
       "avatar_id": "string"         // Must match the avatar_id in the path
@@ -109,8 +108,7 @@
     ```json
     {
       "aige_task_id": "string",
-      "avatar_id": "string",
-      "status": "processing"
+      "avatar_id": "string"
     }
     ```
   - Status Codes:

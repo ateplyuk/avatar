@@ -60,6 +60,38 @@ export const generateBackground = async (avatarIdFromPath, backgroundData) => {
 };
 
 /**
+ * Generates an overlay for a given avatar by calling the backend API.
+ * @param {string} avatarIdFromPath - The ID of the avatar for which to generate the overlay (used in URL path).
+ * @param {object} overlayData - The data for overlay generation.
+ * @param {string} overlayData.prompt - The text prompt.
+ * @param {string} overlayData.aspect_ratio - The desired aspect ratio.
+ * @param {object} overlayData.params - The overlay parameters.
+ * @param {string} overlayData.params.person - URL of the person image.
+ * @param {string} overlayData.params.background - URL of the background image.
+ * @param {object} overlayData.params.position - Position parameters for the person image.
+ * @param {number} overlayData.params.position.x - X coordinate.
+ * @param {number} overlayData.params.position.y - Y coordinate.
+ * @param {number} overlayData.params.position.scale - Scale factor.
+ * @param {string} overlayData.avatar_id - The avatar_id (repeated in body for backend validation).
+ * @param {string} overlayData.writeUrl - The pre-signed URL to write the result.
+ * @param {string} overlayData.readUrl - The URL to read the result from.
+ * @returns {Promise<object>} The response from the API.
+ */
+export const generateOverlay = async (avatarIdFromPath, overlayData) => {
+  // Destructure for clarity and to ensure all required fields are present
+  const { prompt, aspect_ratio, params, avatar_id, writeUrl, readUrl } = overlayData;
+  const payload = { prompt, aspect_ratio, params, avatar_id, writeUrl, readUrl };
+  try {
+    const response = await apiClient.put(`/avatar/${avatarIdFromPath}/overlay`, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error generating overlay:', error.response ? error.response.data : error.message);
+    // Propagate the error object
+    throw error.response ? error.response.data : new Error('Network error or server issue while generating overlay');
+  }
+};
+
+/**
  * Fetches the status of a task from the backend API.
  * @param {string} aigeTaskId - The AIGE task ID.
  * @returns {Promise<object>} The task status response from the API.

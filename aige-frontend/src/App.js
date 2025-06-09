@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import './App.css'; // Make sure this file exists or is created
 import Step1Avatar from './components/Step1Avatar';
 import Step2Background from './components/Step2Background';
+import Step3Overlay from './components/Step3Overlay';
 import TaskStatus from './components/TaskStatus';
 
 function App() {
@@ -17,14 +18,26 @@ function App() {
     readUrl: null, // readUrl for the background image
   });
 
+  const [overlayDetails, setOverlayDetails] = useState({
+    aigeTaskId: null,
+    readUrl: null, // readUrl for the overlay image
+  });
+
   const handleAvatarSuccess = ({ avatarId, aigeTaskId, readUrl }) => {
     setAvatarDetails({ id: avatarId, aigeTaskId: aigeTaskId, readUrl: readUrl });
-    // Reset background details if a new avatar is generated
+    // Reset background and overlay details if a new avatar is generated
     setBackgroundDetails({ aigeTaskId: null, readUrl: null });
+    setOverlayDetails({ aigeTaskId: null, readUrl: null });
   };
 
   const handleBackgroundSuccess = ({ aigeTaskId, readUrl }) => {
     setBackgroundDetails({ aigeTaskId: aigeTaskId, readUrl: readUrl });
+    // Reset overlay details if a new background is generated
+    setOverlayDetails({ aigeTaskId: null, readUrl: null });
+  };
+
+  const handleOverlaySuccess = ({ aigeTaskId, readUrl }) => {
+    setOverlayDetails({ aigeTaskId: aigeTaskId, readUrl: readUrl });
   };
 
   return (
@@ -54,6 +67,24 @@ function App() {
               <TaskStatus
                 aigeTaskId={backgroundDetails.aigeTaskId}
                 label="Background Generation Status"
+              />
+            )}
+          </section>
+        )}
+
+        {/* Conditionally render Step 3 only if both avatar and background have been initiated */}
+        {avatarDetails.id && backgroundDetails.readUrl && (
+          <section className="step-section">
+            <Step3Overlay
+              avatarId={avatarDetails.id}
+              personImageUrl={avatarDetails.readUrl}
+              backgroundImageUrl={backgroundDetails.readUrl}
+              onOverlaySuccess={handleOverlaySuccess}
+            />
+            {overlayDetails.aigeTaskId && (
+              <TaskStatus
+                aigeTaskId={overlayDetails.aigeTaskId}
+                label="Overlay Generation Status"
               />
             )}
           </section>

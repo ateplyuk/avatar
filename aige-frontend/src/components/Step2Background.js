@@ -31,9 +31,7 @@ const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
     setError('');
     setErrorObject(null);
     setResponseBody(null);
-    setImageLoadError(false); // Reset image load error on new submission
-    // Keep previous image visible or clear it:
-    // setGeneratedImageReadUrl('');
+    setImageLoadError(false);
 
     const payload = {
       prompt,
@@ -46,7 +44,6 @@ const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
 
     try {
       const response = await api.generateBackground(avatarId, payload);
-      // Only show aige_task_id and avatar_id in response body
       setResponseBody({
         aige_task_id: response.aige_task_id,
         avatar_id: response.avatar_id
@@ -58,7 +55,7 @@ const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
       if (onBackgroundSuccess) {
         onBackgroundSuccess({
           aigeTaskId: currentTaskID,
-          readUrl: response.readUrl
+          readUrl: payload.readUrl
         });
       }
     } catch (err) {

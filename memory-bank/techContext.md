@@ -116,10 +116,46 @@
     - 400: Avatar ID mismatch
     - 500: Internal server error
 
+#### Overlay Generation
+- **Endpoint**: `/avatar/{avatar_id}/overlay`
+  - **Method**: PUT
+  - Request Body:
+    ```json
+    {
+      "prompt": "string",
+      "aspect_ratio": "string",     // Optional, default "landscape_16_9", allowed values ["square_hd", "square", "portrait_4_3", "portrait_16_9", "landscape_4_3", "landscape_16_9"]
+      "params": {
+        "person": "string",         // URL of the person image
+        "background": "string",     // URL of the background image
+        "position": {
+          "x": number,              // X coordinate for positioning
+          "y": number,              // Y coordinate for positioning
+          "scale": number           // Scale factor for the person image
+        }
+      },
+      "writeUrl": "string",         // Pre-signed URL for uploading the result
+      "readUrl": "string",          // URL for reading the result
+      "avatar_id": "string"         // Must match the avatar_id in the path
+    }
+    ```
+  - Response Body:
+    ```json
+    {
+      "aige_task_id": "string",
+      "avatar_id": "string",
+      "status": "string"           // "processing"
+    }
+    ```
+  - Status Codes:
+    - 200: Generation started
+    - 400: Avatar ID mismatch
+    - 500: Internal server error
+
 ### Task Status Values
 - `pending`: Task is queued
 - `processing_avatar_model`: Avatar generation in progress
 - `processing_background_removal`: Background removal in progress
+- `processing_overlay`: Overlay generation in progress
 - `uploading_image`: Uploading generated image
 - `done`: Task completed successfully
 - `error`: Task failed

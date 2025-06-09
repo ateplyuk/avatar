@@ -1,32 +1,30 @@
 # Active Context
 
 ## Current Focus
-- Initial project setup and documentation
-- Memory Bank initialization
-- System architecture documentation
+- Implementing step 3 (overlay) functionality
+- Adding ability to position and scale character image
+- Generating new background based on user prompt
+- Integrating with fal-ai/iclight-v2 model
 
 ## Recent Changes
-- Created Memory Bank structure
-- Documented system architecture
-- Established technical context
-- Defined product context
+- Added new overlay router in backend
+- Created Step3Overlay component in frontend
+- Updated task status model to include overlay processing
+- Implemented drag-and-drop and scaling functionality
+- Added navigation between steps
 
 ## Next Steps
-1. Review and validate Memory Bank documentation
-2. Identify any missing documentation
-3. Plan for future development tasks
-4. Consider potential improvements
+- Test overlay generation with different prompts
+- Verify character positioning and scaling
+- Ensure smooth transition between steps
+- Add error handling for overlay generation
+- Update API documentation
 
 ## Active Decisions
-1. **Documentation Structure**
-   - Using Markdown for all documentation
-   - Mermaid diagrams for visual representation
-   - Clear hierarchy of information
-
-2. **Current Considerations**
-   - Completeness of initial documentation
-   - Accuracy of technical details
-   - Future documentation needs
+- Using fal-ai/iclight-v2 model for overlay generation
+- Implementing client-side image manipulation
+- Storing intermediate results in localStorage
+- Using polling mechanism for task status updates
 
 ## Open Questions
 1. Are there additional endpoints planned?

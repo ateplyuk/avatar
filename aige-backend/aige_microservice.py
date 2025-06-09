@@ -6,7 +6,14 @@ import sys
 from fastapi.middleware.cors import CORSMiddleware
 
 # Configure basic logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('server.log'),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
 # Create a FastAPI app instance
@@ -30,6 +37,7 @@ api_router = APIRouter()
 from .endpoints import status as status_router
 from .endpoints import avatar as avatar_router
 from .endpoints import background as background_router
+from .endpoints import overlay as overlay_router
 
 # Simple root endpoint
 @app.get("/")
@@ -37,9 +45,11 @@ async def root():
     return {"message": "AIGE Microservice is running"}
 
 # Include endpoint routers
+# Will be prefixed by /api/v1 from the main router
 api_router.include_router(status_router.router, prefix="/task", tags=["status"])
 api_router.include_router(avatar_router.router, prefix="/avatar", tags=["avatar"])
-api_router.include_router(background_router.router, tags=["background"]) # Will be prefixed by /api/v1 from the main router
+api_router.include_router(background_router.router, tags=["background"]) 
+api_router.include_router(overlay_router.router, tags=["overlay"])
 
 # Include the main api_router into the app with a global prefix
 app.include_router(api_router, prefix="/api/v1")

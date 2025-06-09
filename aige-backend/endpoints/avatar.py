@@ -28,7 +28,6 @@ class AvatarGenerationRequest(BaseModel):
 class AvatarGenerationResponse(BaseModel):
     aige_task_id: str
     avatar_id: str
-    status: str
 
 def on_fal_queue_update(update, task_id, step_name):
     if isinstance(update, fal_client.InProgress):
@@ -144,6 +143,5 @@ async def generate_avatar_endpoint(request: AvatarGenerationRequest, background_
     
     return AvatarGenerationResponse(
         aige_task_id=aige_task_id,
-        avatar_id=request.avatar_id,
-        status="processing" 
+        avatar_id=request.avatar_id
     )

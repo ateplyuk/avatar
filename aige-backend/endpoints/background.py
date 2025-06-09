@@ -27,7 +27,6 @@ class BackgroundGenerationRequest(BaseModel):
 class BackgroundGenerationResponse(BaseModel):
     aige_task_id: str
     avatar_id: str 
-    status: str
 
 def on_fal_queue_update(update, task_id, step_name):
     if isinstance(update, fal_client.InProgress):
@@ -113,6 +112,5 @@ async def generate_background_endpoint(avatar_id_in_path: str, request: Backgrou
     
     return BackgroundGenerationResponse(
         aige_task_id=aige_task_id,
-        avatar_id=avatar_id_in_path, 
-        status="processing"
+        avatar_id=avatar_id_in_path
     )

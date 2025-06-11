@@ -1,61 +1,115 @@
 // aige-frontend/src/components/Step2Background.js
-import React, { useState, useEffect } from 'react'; // Added useEffect
+import React, { useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import * as api from '../services/api';
-import { ASPECT_RATIOS, DEFAULT_ASPECT_RATIO, BACKGROUND_URLS } from '../config';
+import { ASPECT_RATIOS, DEFAULT_ASPECT_RATIO, generateBackgroundUrls, TASK_STATUS_POLL_INTERVAL } from '../config';
 
-const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
+const Step2Background = ({ onBackgroundSuccess, avatarId }) => {
   const [prompt, setPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState(DEFAULT_ASPECT_RATIO);
+  // const [backgroundId, setBackgroundId] = useState('');
   const [requestBody, setRequestBody] = useState(null);
   const [responseBody, setResponseBody] = useState(null);
   const [error, setError] = useState('');
   const [errorObject, setErrorObject] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedImageReadUrl, setGeneratedImageReadUrl] = useState('');
-  const [imageLoadError, setImageLoadError] = useState(false); // New state
-  const [refreshKey, setRefreshKey] = useState(0); // Для обновления картинки
+  const [imageLoadError, setImageLoadError] = useState(false);
+  const [currentTaskId, setCurrentTaskId] = useState(null);
+  const [taskStatus, setTaskStatus] = useState(null);
+  const [initialReadUrl, setInitialReadUrl] = useState(null);
+
+  // useEffect(() => {
+  //   setBackgroundId(uuidv4());
+  // }, []);
 
   // Reset imageLoadError when generatedImageReadUrl changes
   useEffect(() => {
     setImageLoadError(false);
   }, [generatedImageReadUrl]);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    if (!avatarId) {
-      setError('Avatar ID is missing. Please complete Step 1 first.');
-      return;
+  // Poll task status
+  useEffect(() => {
+    let intervalId;
+
+    const pollTaskStatus = async () => {
+      if (!currentTaskId) return;
+
+      try {
+        const status = await api.getTaskStatus(currentTaskId);
+        setTaskStatus(status.status);
+        
+        if (status.status === 'done') {
+          // При достижении статуса done используем initialReadUrl
+          if (initialReadUrl) {
+            setGeneratedImageReadUrl(initialReadUrl);
+          }
+          clearInterval(intervalId);
+        } else if (status.status === 'error') {
+          setError('Task failed: ' + status.status);
+          clearInterval(intervalId);
+        }
+      } catch (err) {
+        console.error('Error polling task status:', err);
+        clearInterval(intervalId);
+      }
+    };
+
+    if (currentTaskId) {
+      intervalId = setInterval(pollTaskStatus, TASK_STATUS_POLL_INTERVAL);
+      // Initial poll
+      pollTaskStatus();
     }
 
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [currentTaskId, initialReadUrl]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setIsLoading(true);
     setError('');
     setErrorObject(null);
     setResponseBody(null);
     setImageLoadError(false);
-
-    const payload = {
-      prompt,
-      aspect_ratio: aspectRatio,
-      avatar_id: avatarId,
-      writeUrl: BACKGROUND_URLS.writeUrl,
-      readUrl: BACKGROUND_URLS.readUrl
-    };
-    setRequestBody(payload);
+    setTaskStatus(null);
+    setInitialReadUrl(null);
+    setGeneratedImageReadUrl('');
 
     try {
+      const urls = await generateBackgroundUrls();
+      const payload = {
+        prompt,
+        aspect_ratio: aspectRatio,
+        // background_id: backgroundId,
+        avatar_id: avatarId,
+        // aige_task_id: aigeTaskId,
+        writeUrl: urls.writeUrl,
+        readUrl: urls.readUrl,
+        // source_images: DEFAULT_SOURCE_IMAGES
+      };
+      setRequestBody(payload);
+      setInitialReadUrl(urls.readUrl);
+
       const response = await api.generateBackground(avatarId, payload);
       setResponseBody({
         aige_task_id: response.aige_task_id,
-        avatar_id: response.avatar_id
+        // background_id: response.background_id,
+        avatar_id: avatarId
+
       });
-      if (response && payload.readUrl) {
-        setGeneratedImageReadUrl(payload.readUrl);
-      }
-      const currentTaskID = response.aige_task_id || response.taskId || null;
+
+      const currentTaskID = response.aige_task_id; //|| response.taskId || null;
+      setCurrentTaskId(currentTaskID);
+      
       if (onBackgroundSuccess) {
         onBackgroundSuccess({
+          // backgroundId: backgroundId,
           aigeTaskId: currentTaskID,
-          readUrl: payload.readUrl
+          readUrl: urls.readUrl
         });
       }
     } catch (err) {
@@ -78,34 +132,25 @@ const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
     setImageLoadError(false);
   };
 
-  if (!avatarId) {
-    return (
-      <div className="step-container disabled-step">
-        <h2>Step 2: Generate Background</h2>
-        <p>Please complete Step 1 to generate an avatar first. Avatar ID is required.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="step-container step-layout-container">
       <div className="form-and-debug-column">
-        <h2>Step 2: Generate Background (for Avatar ID: {avatarId})</h2>
+        <h2>Step 2: Generate Background</h2>
         <form onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="bg-prompt">Prompt:</label>
+            <label htmlFor="background-prompt">Prompt:</label>
             <input
               type="text"
-              id="bg-prompt"
+              id="background-prompt"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               required
             />
           </div>
           <div>
-            <label htmlFor="bg-aspect-ratio">Aspect Ratio:</label>
+            <label htmlFor="background-aspect-ratio">Aspect Ratio:</label>
             <select
-              id="bg-aspect-ratio"
+              id="background-aspect-ratio"
               value={aspectRatio}
               onChange={(e) => setAspectRatio(e.target.value)}
             >
@@ -114,7 +159,7 @@ const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
               ))}
             </select>
           </div>
-          <button type="submit" disabled={isLoading || !avatarId}>
+          <button type="submit" disabled={isLoading}>
             {isLoading ? 'Generating...' : 'Generate Background'}
           </button>
         </form>
@@ -148,29 +193,17 @@ const Step2Background = ({ avatarId, onBackgroundSuccess }) => {
 
       <div className="image-preview-column">
         <h3>Generated Background Preview</h3>
-        {generatedImageReadUrl ? (
-          <>
-            {!imageLoadError ? (
-              <img
-                key={refreshKey}
-                src={generatedImageReadUrl}
-                alt="Generated Background"
-                className="result-image"
-                onError={handleImageError}
-                onLoad={handleImageLoad}
-              />
-            ) : (
-              <div className="image-placeholder">
-                Error loading image. Check console or URL.
-              </div>
-            )}
-            <button style={{marginTop: '10px'}} onClick={() => setRefreshKey(prev => prev + 1)}>
-              Обновить картинку
-            </button>
-          </>
+        {taskStatus === 'done' && generatedImageReadUrl ? (
+          <img
+            src={generatedImageReadUrl}
+            alt="Generated Background"
+            className="result-image"
+            onError={handleImageError}
+            onLoad={handleImageLoad}
+          />
         ) : (
           <div className="image-placeholder">
-            Your generated background will appear here.
+            {isLoading ? 'Generating background...' : 'Your generated background will appear here.'}
           </div>
         )}
       </div>

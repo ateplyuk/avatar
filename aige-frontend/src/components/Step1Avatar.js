@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import * as api from '../services/api';
-import { ASPECT_RATIOS, DEFAULT_ASPECT_RATIO, AVATAR_URLS, DEFAULT_SOURCE_IMAGES } from '../config';
+import { ASPECT_RATIOS, DEFAULT_ASPECT_RATIO, DEFAULT_SOURCE_IMAGES, generateAvatarUrls, TASK_STATUS_POLL_INTERVAL } from '../config';
 
 const Step1Avatar = ({ onAvatarSuccess }) => {
   const [prompt, setPrompt] = useState('');
@@ -14,8 +14,12 @@ const Step1Avatar = ({ onAvatarSuccess }) => {
   const [errorObject, setErrorObject] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [generatedImageReadUrl, setGeneratedImageReadUrl] = useState('');
-  const [imageLoadError, setImageLoadError] = useState(false); // New state for image load errors
-  const [refreshKey, setRefreshKey] = useState(0); // Для обновления картинки
+  const [imageLoadError, setImageLoadError] = useState(false);
+  // const [refreshKey, setRefreshKey] = useState(0);
+  // const [debugInfo, setDebugInfo] = useState(null);
+  const [currentTaskId, setCurrentTaskId] = useState(null);
+  const [taskStatus, setTaskStatus] = useState(null);
+  const [initialReadUrl, setInitialReadUrl] = useState(null);
 
   useEffect(() => {
     setAvatarId(uuidv4());
@@ -26,42 +30,84 @@ const Step1Avatar = ({ onAvatarSuccess }) => {
     setImageLoadError(false);
   }, [generatedImageReadUrl]);
 
+  // Poll task status
+  useEffect(() => {
+    let intervalId;
+
+    const pollTaskStatus = async () => {
+      if (!currentTaskId) return;
+
+      try {
+        const status = await api.getTaskStatus(currentTaskId);
+        setTaskStatus(status.status);
+        
+        if (status.status === 'done') {
+          // При достижении статуса done используем initialReadUrl
+          if (initialReadUrl) {
+            setGeneratedImageReadUrl(initialReadUrl);
+          }
+          clearInterval(intervalId);
+        } else if (status.status === 'error') {
+          setError('Task failed: ' + status.status);
+          clearInterval(intervalId);
+        }
+      } catch (err) {
+        console.error('Error polling task status:', err);
+        clearInterval(intervalId);
+      }
+    };
+
+    if (currentTaskId) {
+      intervalId = setInterval(pollTaskStatus, TASK_STATUS_POLL_INTERVAL);
+      // Initial poll
+      pollTaskStatus();
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [currentTaskId, initialReadUrl]);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsLoading(true);
     setError('');
     setErrorObject(null);
     setResponseBody(null);
-    setImageLoadError(false); // Reset image load error on new submission
-    // Keep previous image visible during generation for better UX, or clear it:
-    // setGeneratedImageReadUrl('');
-
-    const payload = {
-      prompt,
-      aspect_ratio: aspectRatio,
-      avatar_id: avatarId,
-      writeUrl: AVATAR_URLS.writeUrl,
-      readUrl: AVATAR_URLS.readUrl,
-      source_images: DEFAULT_SOURCE_IMAGES,
-    };
-    setRequestBody(payload);
+    setImageLoadError(false);
+    setTaskStatus(null);
+    setInitialReadUrl(null);
+    setGeneratedImageReadUrl('');
 
     try {
+      const urls = await generateAvatarUrls();
+      const payload = {
+        prompt,
+        aspect_ratio: aspectRatio,
+        avatar_id: avatarId,
+        writeUrl: urls.writeUrl,
+        readUrl: urls.readUrl,
+        source_images: DEFAULT_SOURCE_IMAGES
+      };
+      setRequestBody(payload);
+      setInitialReadUrl(urls.readUrl);
+
       const response = await api.generateAvatar(payload);
-      // Only show aige_task_id and avatar_id in response body
       setResponseBody({
         aige_task_id: response.aige_task_id,
         avatar_id: response.avatar_id
       });
-      if (response && payload.readUrl) {
-        setGeneratedImageReadUrl(payload.readUrl);
-      } 
-      const currentTaskID = response.aige_task_id || response.taskId || null;
+
+      const currentTaskID = response.aige_task_id; //|| response.taskId || null;
+      setCurrentTaskId(currentTaskID);
+      
       if (onAvatarSuccess) {
         onAvatarSuccess({
           avatarId: avatarId,
           aigeTaskId: currentTaskID,
-          readUrl: response.readUrl || payload.readUrl
+          readUrl: urls.readUrl
         });
       }
     } catch (err) {
@@ -81,7 +127,7 @@ const Step1Avatar = ({ onAvatarSuccess }) => {
   };
 
   const handleImageLoad = () => {
-    setImageLoadError(false); // Reset error on successful load
+    setImageLoadError(false);
   };
 
   return (
@@ -145,29 +191,17 @@ const Step1Avatar = ({ onAvatarSuccess }) => {
 
       <div className="image-preview-column">
         <h3>Generated Avatar Preview</h3>
-        {generatedImageReadUrl ? (
-          <>
-            {!imageLoadError ? (
-              <img
-                key={refreshKey}
-                src={generatedImageReadUrl}
-                alt="Generated Avatar"
-                className="result-image"
-                onError={handleImageError}
-                onLoad={handleImageLoad}
-              />
-            ) : (
-              <div className="image-placeholder">
-                Error loading image. Check console or URL.
-              </div>
-            )}
-            <button style={{marginTop: '10px'}} onClick={() => setRefreshKey(prev => prev + 1)}>
-              Обновить картинку
-            </button>
-          </>
+        {taskStatus === 'done' && generatedImageReadUrl ? (
+          <img
+            src={generatedImageReadUrl}
+            alt="Generated Avatar"
+            className="result-image"
+            onError={handleImageError}
+            onLoad={handleImageLoad}
+          />
         ) : (
           <div className="image-placeholder">
-            Your generated avatar will appear here.
+            {isLoading ? 'Generating avatar...' : 'Your generated avatar will appear here.'}
           </div>
         )}
       </div>

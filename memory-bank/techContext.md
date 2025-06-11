@@ -142,8 +142,7 @@
     ```json
     {
       "aige_task_id": "string",
-      "avatar_id": "string",
-      "status": "string"           // "processing"
+      "avatar_id": "string"
     }
     ```
   - Status Codes:

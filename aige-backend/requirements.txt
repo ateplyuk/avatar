@@ -4,3 +4,5 @@ httpx
 python-multipart
 pydantic
 fal-client
+boto3
+pillow

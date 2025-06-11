@@ -1,12 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import * as api from '../services/api';
-import { OVERLAY_ASPECT_RATIOS, DEFAULT_OVERLAY_ASPECT_RATIO, OVERLAY_URLS } from '../config';
+import { OVERLAY_ASPECT_RATIOS, DEFAULT_OVERLAY_ASPECT_RATIO, generateOverlayUrls, TASK_STATUS_POLL_INTERVAL } from '../config';
 import './Step3Overlay.css';
 
-const Step3Overlay = ({ avatarId, personImageUrl, backgroundImageUrl, onOverlaySuccess }) => {
+// Маппинг value -> [width, height] для aspect ratio
+const ASPECT_RATIO_MAP = {
+  square_hd: [1, 1],
+  square: [1, 1],
+  portrait_4_3: [3, 4],
+  portrait_16_9: [9, 16],
+  landscape_4_3: [4, 3],
+  landscape_16_9: [16, 9],
+};
+
+const Step3Overlay = ({ onOverlaySuccess, avatarId, aigeTaskId, personImageUrl, backgroundImageUrl }) => {
   const [prompt, setPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState(DEFAULT_OVERLAY_ASPECT_RATIO);
-  const [position, setPosition] = useState({ x: 0, y: 0, scale: 1 });
+  const [overlayId, setOverlayId] = useState('');
   const [requestBody, setRequestBody] = useState(null);
   const [responseBody, setResponseBody] = useState(null);
   const [error, setError] = useState('');
@@ -14,20 +25,82 @@ const Step3Overlay = ({ avatarId, personImageUrl, backgroundImageUrl, onOverlayS
   const [isLoading, setIsLoading] = useState(false);
   const [generatedImageReadUrl, setGeneratedImageReadUrl] = useState('');
   const [imageLoadError, setImageLoadError] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [currentTaskId, setCurrentTaskId] = useState(null);
+  const [taskStatus, setTaskStatus] = useState(null);
+  const [initialReadUrl, setInitialReadUrl] = useState(null);
+  const [position, setPosition] = useState({ x: 0, y: 0, scale: 1 });
   const [previewContainerRef, setPreviewContainerRef] = useState(null);
+  const [backgroundLoadError, setBackgroundLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // Вычисляем размеры превью-контейнера
+  const PREVIEW_WIDTH = 300; // px, фиксированная ширина
+  const [w, h] = ASPECT_RATIO_MAP[aspectRatio] || [1, 1];
+  const previewHeight = PREVIEW_WIDTH * (h / w);
+
+  // useEffect(() => {
+  //   setOverlayId(uuidv4());
+  // }, []);
 
   useEffect(() => {
     setImageLoadError(false);
   }, [generatedImageReadUrl]);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    if (!avatarId) {
-      setError('Avatar ID is missing. Please complete previous steps first.');
-      return;
+  useEffect(() => {
+    let intervalId;
+
+    const pollTaskStatus = async () => {
+      if (!currentTaskId) return;
+
+      try {
+        const status = await api.getTaskStatus(currentTaskId);
+        setTaskStatus(status.status);
+        
+        if (status.status === 'done') {
+          if (initialReadUrl) {
+            setGeneratedImageReadUrl(initialReadUrl);
+          }
+          clearInterval(intervalId);
+        } else if (status.status === 'error') {
+          setError('Task failed: ' + status.status);
+          clearInterval(intervalId);
+        }
+      } catch (err) {
+        console.error('Error polling task status:', err);
+        clearInterval(intervalId);
+      }
+    };
+
+    if (currentTaskId) {
+      intervalId = setInterval(pollTaskStatus, TASK_STATUS_POLL_INTERVAL);
+      pollTaskStatus();
     }
 
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [currentTaskId, initialReadUrl]);
+
+  useEffect(() => {
+    setBackgroundLoadError(false);
+    setReloadKey(0);
+  }, [backgroundImageUrl]);
+
+  useEffect(() => {
+    let retryTimeout;
+    if (backgroundLoadError && backgroundImageUrl) {
+      retryTimeout = setTimeout(() => {
+        setReloadKey(k => k + 1);
+        setBackgroundLoadError(false);
+      }, 2000); // 2 секунды между попытками
+    }
+    return () => clearTimeout(retryTimeout);
+  }, [backgroundLoadError, backgroundImageUrl]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     if (!personImageUrl || !backgroundImageUrl) {
       setError('Person and background images are required. Please complete previous steps first.');
       return;
@@ -38,36 +111,48 @@ const Step3Overlay = ({ avatarId, personImageUrl, backgroundImageUrl, onOverlayS
     setErrorObject(null);
     setResponseBody(null);
     setImageLoadError(false);
-
-    const payload = {
-      prompt,
-      aspect_ratio: aspectRatio,
-      params: {
-        person: personImageUrl,
-        background: backgroundImageUrl,
-        position
-      },
-      avatar_id: avatarId,
-      writeUrl: OVERLAY_URLS.writeUrl,
-      readUrl: OVERLAY_URLS.readUrl
-    };
-    setRequestBody(payload);
+    setTaskStatus(null);
+    setInitialReadUrl(null);
+    setGeneratedImageReadUrl('');
 
     try {
+      const urls = await generateOverlayUrls();
+      const payload = {
+        prompt,
+        aspect_ratio: aspectRatio,
+        // overlay_id: overlayId,
+        avatar_id: avatarId,
+        // aige_task_id: aigeTaskId,
+        writeUrl: urls.writeUrl,
+        readUrl: urls.readUrl,
+        // source_images: DEFAULT_SOURCE_IMAGES,
+        params: {
+          person: personImageUrl,
+          background: backgroundImageUrl,
+          position: {
+            x: position.x,
+            y: position.y,
+            scale: position.scale
+          }
+        }
+      };
+      setRequestBody(payload);
+      setInitialReadUrl(urls.readUrl);
+
       const response = await api.generateOverlay(avatarId, payload);
       setResponseBody({
         aige_task_id: response.aige_task_id,
-        avatar_id: response.avatar_id,
-        status: response.status
+        avatar_id: avatarId
       });
-      if (response && payload.readUrl) {
-        setGeneratedImageReadUrl(payload.readUrl);
-      }
+
       const currentTaskID = response.aige_task_id || response.taskId || null;
+      setCurrentTaskId(currentTaskID);
+      
       if (onOverlaySuccess) {
         onOverlaySuccess({
+          // overlayId: overlayId,
           aigeTaskId: currentTaskID,
-          readUrl: payload.readUrl
+          readUrl: urls.readUrl
         });
       }
     } catch (err) {
@@ -91,6 +176,9 @@ const Step3Overlay = ({ avatarId, personImageUrl, backgroundImageUrl, onOverlayS
   };
 
   const handlePositionChange = (field, value) => {
+    if (field === 'x' || field === 'y') {
+      value = Math.max(0, Math.min(100, value));
+    }
     setPosition(prev => ({
       ...prev,
       [field]: value
@@ -106,12 +194,14 @@ const Step3Overlay = ({ avatarId, personImageUrl, backgroundImageUrl, onOverlayS
     e.target.classList.remove('dragging');
     if (previewContainerRef) {
       const rect = previewContainerRef.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const xPx = e.clientX - rect.left;
+      const yPx = e.clientY - rect.top;
+      const xPercent = Math.max(0, Math.min(100, (xPx / rect.width) * 100));
+      const yPercent = Math.max(0, Math.min(100, (yPx / rect.height) * 100));
       setPosition(prev => ({
         ...prev,
-        x: Math.round(x),
-        y: Math.round(y)
+        x: xPercent,
+        y: yPercent
       }));
     }
   };
@@ -155,21 +245,27 @@ const Step3Overlay = ({ avatarId, personImageUrl, backgroundImageUrl, onOverlayS
           <div>
             <label>Position:</label>
             <div>
-              <label htmlFor="position-x">X:</label>
+              <label htmlFor="position-x">X (%):</label>
               <input
                 type="number"
                 id="position-x"
                 value={position.x}
                 onChange={(e) => handlePositionChange('x', Number(e.target.value))}
+                min={0}
+                max={100}
+                step={0.1}
               />
             </div>
             <div>
-              <label htmlFor="position-y">Y:</label>
+              <label htmlFor="position-y">Y (%):</label>
               <input
                 type="number"
                 id="position-y"
                 value={position.y}
                 onChange={(e) => handlePositionChange('y', Number(e.target.value))}
+                min={0}
+                max={100}
+                step={0.1}
               />
             </div>
             <div>
@@ -185,7 +281,7 @@ const Step3Overlay = ({ avatarId, personImageUrl, backgroundImageUrl, onOverlayS
               />
             </div>
           </div>
-          <button type="submit" disabled={isLoading || !avatarId || !personImageUrl || !backgroundImageUrl}>
+          <button type="submit" disabled={isLoading || !personImageUrl || !backgroundImageUrl}>
             {isLoading ? 'Generating...' : 'Generate Overlay'}
           </button>
         </form>
@@ -222,60 +318,84 @@ const Step3Overlay = ({ avatarId, personImageUrl, backgroundImageUrl, onOverlayS
         <div 
           className="preview-container"
           ref={setPreviewContainerRef}
-          style={{ position: 'relative', width: '100%', height: '400px', border: '1px solid #ccc' }}
+          style={{ position: 'relative', width: PREVIEW_WIDTH, height: previewHeight, border: '1px solid #ccc', margin: '0 auto', background: '#f5f5f5' }}
         >
-          {backgroundImageUrl && (
+          {/* Background image с повторной попыткой отображения при появлении URL */}
+          {backgroundImageUrl && !backgroundLoadError && (
             <img
+              key={backgroundImageUrl + reloadKey}
               src={backgroundImageUrl}
               alt="Background"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                zIndex: 1
+              }}
+              draggable={false}
+              onError={() => setBackgroundLoadError(true)}
+              onLoad={() => setBackgroundLoadError(false)}
             />
           )}
+          {backgroundImageUrl && backgroundLoadError && (
+            <div style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              width: '100%',
+              height: '100%',
+              background: '#fff',
+              color: '#d32f2f',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1,
+              fontSize: '1em',
+              border: '1px dashed #d32f2f'
+            }}>
+              Не удалось загрузить фон
+            </div>
+          )}
+          {/* Person image overlay */}
           {personImageUrl && (
             <img
               src={personImageUrl}
               alt="Person"
-              draggable="true"
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
               style={{
                 position: 'absolute',
-                left: `${position.x}px`,
-                top: `${position.y}px`,
-                transform: `scale(${position.scale})`,
+                left: position.x + '%',
+                top: position.y + '%',
+                width: `${position.scale * 100}%`,
+                height: 'auto',
+                zIndex: 2,
                 cursor: 'move',
-                maxWidth: '200px',
-                maxHeight: '200px',
-                objectFit: 'contain'
+                pointerEvents: 'auto',
+                maxWidth: 'none',
+                maxHeight: 'none',
+                transform: 'translate(-50%, -50%)',
               }}
+              draggable
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
             />
           )}
         </div>
 
         <h3>Generated Overlay Preview</h3>
-        {generatedImageReadUrl ? (
-          <>
-            {!imageLoadError ? (
-              <img
-                key={refreshKey}
-                src={generatedImageReadUrl}
-                alt="Generated Overlay"
-                className="result-image"
-                onError={handleImageError}
-                onLoad={handleImageLoad}
-              />
-            ) : (
-              <div className="image-placeholder">
-                Error loading image. Check console or URL.
-              </div>
-            )}
-            <button style={{marginTop: '10px'}} onClick={() => setRefreshKey(prev => prev + 1)}>
-              Обновить картинку
-            </button>
-          </>
+        {taskStatus === 'done' && generatedImageReadUrl ? (
+          <img
+            src={generatedImageReadUrl}
+            alt="Generated Overlay"
+            className="result-image"
+            onError={handleImageError}
+            onLoad={handleImageLoad}
+          />
         ) : (
           <div className="image-placeholder">
-            Your generated overlay will appear here.
+            {isLoading ? 'Generating overlay...' : 'Your generated overlay will appear here.'}
           </div>
         )}
       </div>

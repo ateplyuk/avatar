@@ -6,6 +6,8 @@ from uuid import uuid4
 import logging
 import fal_client
 import httpx
+from PIL import Image
+from io import BytesIO
 
 from ..storage import task_status_db
 from ..config import OVERLAY_MODEL
@@ -28,7 +30,7 @@ class OverlayParams(BaseModel):
 
 class OverlayRequest(BaseModel):
     prompt: str
-    aspect_ratio: Optional[str] = "landscape_16_9"  # Значение по умолчанию, allowed values ["square_hd, square, portrait_4_3, portrait_16_9, landscape_4_3, landscape_16_9"]
+    aspect_ratio: Optional[str] = "square"  # Значение по умолчанию, allowed values ["square_hd, square, portrait_4_3, portrait_16_9, landscape_4_3, landscape_16_9"]
     params: OverlayParams
     writeUrl: str
     readUrl: str
@@ -52,12 +54,66 @@ async def run_overlay_task(task_id: str, avatar_id_from_path: str, request_data:
             if avatar_id_from_path != request_data.avatar_id:
                 logger.warning(f"Task {task_id}: Avatar ID mismatch - path '{avatar_id_from_path}', body '{request_data.avatar_id}'. Using ID from path.")
             task_status_db[task_id] = "processing_overlay"
+            logger.info(f"Task {task_id}: Preparing person image with position and scale...")
+
+            # 1. Download background and person images
+            async with httpx.AsyncClient() as client:
+                bg_resp = await client.get(request_data.params.background)
+                bg_resp.raise_for_status()
+                bg_bytes = bg_resp.content
+                person_resp = await client.get(request_data.params.person)
+                person_resp.raise_for_status()
+                person_bytes = person_resp.content
+
+            # 2. Open images with PIL
+            bg_img = Image.open(BytesIO(bg_bytes)).convert('RGB')
+            person_img = Image.open(BytesIO(person_bytes)).convert('RGBA')
+            bg_w, bg_h = bg_img.size
+
+            # 3. Prepare white canvas
+            canvas = Image.new('RGB', (bg_w, bg_h), (255, 255, 255))
+
+            # 4. Scale person
+            scale = request_data.params.position.scale
+            person_w, person_h = person_img.size
+            new_w = int(person_w * scale)
+            new_h = int(person_h * scale)
+            try:
+                resample = Image.Resampling.LANCZOS
+            except AttributeError:
+                resample = Image.ANTIALIAS
+            person_img = person_img.resize((new_w, new_h), resample)
+
+            # 5. Compute position (centered)
+            x = int((request_data.params.position.x / 100) * bg_w)
+            y = int((request_data.params.position.y / 100) * bg_h)
+            paste_x = x - new_w // 2
+            paste_y = y - new_h // 2
+
+            # 6. Paste person onto canvas
+            canvas.paste(person_img, (paste_x, paste_y), person_img)
+
+            # 7. Save to bytes
+            out_buf = BytesIO()
+            canvas.save(out_buf, format='JPEG')
+            out_buf.seek(0)
+            composed_bytes = out_buf.read()
+
+            # 8. Upload to S3 (use writeUrl as temp, or generate new if needed)
+            # We'll use the same writeUrl as for overlay, or you can generate a new one if needed
+            # Here, for simplicity, use writeUrl
+            await upload_image_to_presigned_url(request_data.writeUrl, composed_bytes, 'image/jpeg')
+            logger.info(f"Task {task_id}: Composed person image uploaded to {request_data.writeUrl}")
+
+            # 9. Use readUrl as the image_url for overlay
+            composed_image_url = request_data.readUrl
+
             logger.info(f"Task {task_id}: Calling Fal.ai model {OVERLAY_MODEL}...")
 
             overlay_model_args = {
                 "prompt": request_data.prompt,
                 "image_size": request_data.aspect_ratio,
-                "image_url": request_data.params.person,
+                "image_url": composed_image_url,
                 "background_threshold": 0.67,
                 "num_inference_steps": 28,
                 "initial_latent": "None",

@@ -26,6 +26,14 @@ export const TASK_STATUS_POLL_INTERVAL = 5000;
 // Default source images (usually empty as per user feedback, but required by API)
 export const DEFAULT_SOURCE_IMAGES = [];
 
+export const DEFAULT_FINETUNE_IMAGE_URL = 'https://teplyuk-test.t3.storage.dev/test-2025-06-12T07-37-22-382901Z-d78c9c9d-a004-4511-b759-c9081d7b3e3a?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=tid_WrWfNMUMkkcLlXKaelojGZnOjXiUccpw_exgnyEBWvJzlGqfWF%2F20250612%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20250612T073722Z&X-Amz-Expires=3600000&X-Amz-SignedHeaders=host&X-Amz-Signature=202d11ef23bab06733c97673e7b2292fa900b21336c04ce76546553a5fd30a47';
+export const DEFAULT_FINETUNE_IMAGE_URLS = [
+  DEFAULT_FINETUNE_IMAGE_URL,
+  DEFAULT_FINETUNE_IMAGE_URL,
+  DEFAULT_FINETUNE_IMAGE_URL,
+  DEFAULT_FINETUNE_IMAGE_URL
+];
+
 const generateS3Urls = async () => {
   try {
     console.log('Attempting to fetch URLs from:', `${API_BASE_URL}/generate-urls`);

@@ -1,10 +1,12 @@
 // aige-frontend/src/App.js
 import React, { useState } from 'react';
 import './App.css'; // Make sure this file exists or is created
+import Step0Finetune from './components/Step0Finetune';
 import Step1Avatar from './components/Step1Avatar';
 import Step2Background from './components/Step2Background';
 import Step3Overlay from './components/Step3Overlay';
 import TaskStatus from './components/TaskStatus';
+import Step1FluxUltra from './components/Step1FluxUltra';
 
 function App() {
   const [avatarDetails, setAvatarDetails] = useState({
@@ -46,6 +48,12 @@ function App() {
         <h1>AIGE Frontend API Tester</h1>
       </header>
       <main className="App-main">
+        <section className="step-section">
+          <Step0Finetune />
+        </section>
+        <section className="step-section">
+          <Step1FluxUltra />
+        </section>
         <section className="step-section">
           <Step1Avatar onAvatarSuccess={handleAvatarSuccess} />
           {avatarDetails.aigeTaskId && (

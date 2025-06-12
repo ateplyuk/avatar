@@ -219,6 +219,9 @@ const Step3Overlay = ({ onOverlaySuccess, avatarId, aigeTaskId, personImageUrl, 
     <div className="step-container step-layout-container">
       <div className="form-and-debug-column">
         <h2>Step 3: Generate Overlay (for Avatar ID: {avatarId})</h2>
+        <div style={{fontSize: '0.95em', color: '#1976d2', marginBottom: 8}}>
+          {`PUT /api/v1/avatar/${avatarId}/overlay`}
+        </div>
         <form onSubmit={handleSubmit}>
           <div>
             <label htmlFor="overlay-prompt">Prompt:</label>

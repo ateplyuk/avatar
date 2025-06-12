@@ -134,6 +134,7 @@ const Step1Avatar = ({ onAvatarSuccess }) => {
     <div className="step-container step-layout-container">
       <div className="form-and-debug-column">
         <h2>Step 1: Generate Avatar</h2>
+        <div style={{fontSize: '0.95em', color: '#1976d2', marginBottom: 8}}>POST /api/v1/avatar</div>
         <form onSubmit={handleSubmit}>
           <div>
             <label htmlFor="avatar-prompt">Prompt:</label>

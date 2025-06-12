@@ -109,3 +109,80 @@ export const getTaskStatus = async (aigeTaskId) => {
     return { aige_task_id: aigeTaskId, status: 'error_fetching_status', error_message: error.message, details: error.response ? error.response.data : null };
   }
 };
+
+/**
+ * Starts a finetune job by calling the backend API.
+ * @param {object} finetuneData - The data for finetune.
+ * @param {string} finetuneData.data_url - URL to the training data (S3 bucket with images).
+ * @param {string} [finetuneData.finetune_comment] - Optional comment for the finetune job.
+ * @param {string} [finetuneData.mode] - Finetune mode (default: 'character').
+ * @param {string} [finetuneData.trigger_word] - Trigger word (default: 'TOM4S').
+ * @param {number} [finetuneData.iterations] - Number of iterations (default: 300).
+ * @param {string} [finetuneData.priority] - Priority (default: 'quality').
+ * @param {boolean} [finetuneData.captioning] - Enable captioning (default: true).
+ * @param {number} [finetuneData.lora_rank] - LoRA rank (default: 32).
+ * @param {string} [finetuneData.finetune_type] - Finetune type (default: 'full').
+ * @returns {Promise<object>} The response from the API (finetune_id).
+ */
+export const startFinetune = async (finetuneData) => {
+  try {
+    const response = await apiClient.post('/finetune', finetuneData);
+    return response.data;
+  } catch (error) {
+    console.error('Error starting finetune:', error.response ? error.response.data : error.message);
+    throw error.response ? error.response.data : new Error('Network error or server issue while starting finetune');
+  }
+};
+
+/**
+ * Получить результат fine-tune по request_id.
+ * @param {string} requestId - Идентификатор запроса (request_id).
+ * @returns {Promise<object>} Результат fine-tune (например, {finetune_id: ...})
+ */
+export const getFinetuneResult = async (requestId) => {
+  try {
+    const response = await apiClient.get(`/finetune/result/${requestId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching finetune result:', error.response ? error.response.data : error.message);
+    throw error.response ? error.response.data : new Error('Network error or server issue while fetching finetune result');
+  }
+};
+
+/**
+ * Генерация изображения через FLUX Ultra (fal-ai/flux-pro/v1.1-ultra-finetuned).
+ * @param {object} data - Данные для генерации.
+ * @param {string} data.prompt - Промпт для генерации.
+ * @param {string} data.finetune_id - ID fine-tuned модели.
+ * @param {string} [data.aspect_ratio] - Соотношение сторон.
+ * @param {string} [data.output_format] - Формат вывода.
+ * @param {number} [data.num_images] - Количество изображений.
+ * @param {string} [data.safety_tolerance] - Уровень толерантности.
+ * @param {number} [data.seed] - Seed.
+ * @param {number} [data.finetune_strength] - Сила fine-tune (0.0-1.0).
+ * @returns {Promise<object>} task_id
+ */
+export const generateFluxUltra = async (data) => {
+  try {
+    const response = await apiClient.post('/flux-ultra', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error generating FLUX Ultra image:', error.response ? error.response.data : error.message);
+    throw error.response ? error.response.data : new Error('Network error or server issue while generating FLUX Ultra image');
+  }
+};
+
+/**
+ * Получить результат FLUX Ultra по request_id.
+ * @param {string} requestId - Идентификатор запроса (request_id).
+ * @returns {Promise<object>} Результат генерации (например, {images: [...]})
+ */
+export const getFluxUltraResult = async (requestId) => {
+  try {
+    const response = await apiClient.get(`/flux-ultra/result/${requestId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching FLUX Ultra result:', error.response ? error.response.data : error.message);
+    throw error.response ? error.response.data : new Error('Network error or server issue while fetching FLUX Ultra result');
+  }
+};

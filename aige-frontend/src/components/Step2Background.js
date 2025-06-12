@@ -136,6 +136,9 @@ const Step2Background = ({ onBackgroundSuccess, avatarId }) => {
     <div className="step-container step-layout-container">
       <div className="form-and-debug-column">
         <h2>Step 2: Generate Background</h2>
+        <div style={{fontSize: '0.95em', color: '#1976d2', marginBottom: 8}}>
+          {`PUT /api/v1/avatar/${avatarId}/background`}
+        </div>
         <form onSubmit={handleSubmit}>
           <div>
             <label htmlFor="background-prompt">Prompt:</label>

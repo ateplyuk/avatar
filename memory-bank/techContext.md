@@ -123,7 +123,7 @@
     ```json
     {
       "prompt": "string",
-      "aspect_ratio": "string",     // Optional, default "landscape_16_9", allowed values ["square_hd", "square", "portrait_4_3", "portrait_16_9", "landscape_4_3", "landscape_16_9"]
+      "aspect_ratio": "string",     // Optional, default "square", allowed values ["square_hd", "square", "portrait_4_3", "portrait_16_9", "landscape_4_3", "landscape_16_9"]
       "params": {
         "person": "string",         // URL of the person image
         "background": "string",     // URL of the background image
@@ -150,33 +150,100 @@
     - 400: Avatar ID mismatch
     - 500: Internal server error
 
+#### Fine-tune (FLUX.1 Pro Trainer)
+- **Endpoint**: `/finetune`
+  - **Method**: POST
+  - Request Body:
+    ```json
+    {
+      "data_url": "string",           // URL to the training data (S3 bucket with images)
+      "finetune_comment": "string",   // Optional comment for the finetune job
+      "mode": "string",               // Finetune mode (default: 'character')
+      "trigger_word": "string",       // Trigger word (default: 'TOM4S')
+      "iterations": 300,               // Number of iterations (default: 300)
+      "priority": "string",           // Priority (default: 'quality')
+      "captioning": true,              // Enable captioning (default: true)
+      "lora_rank": 32,                 // LoRA rank (default: 32)
+      "finetune_type": "string"       // Finetune type (default: 'full')
+    }
+    ```
+  - Response Body:
+    ```json
+    {
+      "finetune_id": "string"         // ID of the started fine-tune job
+    }
+    ```
+  - Status Codes:
+    - 200: Fine-tune started
+    - 500: Internal server error
+
+#### Fine-tune Result
+- **Endpoint**: `/finetune/result/{request_id}`
+  - **Method**: GET
+  - Path Parameter:
+    - `request_id`: string — идентификатор, полученный при запуске fine-tune
+  - Response Body (если готово):
+    ```json
+    {
+      "finetune_id": "string" // ID завершённого fine-tune
+    }
+    ```
+  - Status Codes:
+    - 200: Fine-tune завершён, finetune_id получен
+    - 404: Fine-tune ещё не завершён или не найден
+
+#### FLUX Ultra Generation (FLUX1.1 Pro Ultra-finetuned)
+- **Endpoint**: `/flux-ultra`
+  - **Method**: POST
+  - Request Body:
+    ```json
+    {
+      "prompt": "string",            // Prompt for image generation
+      "finetune_id": "string",      // ID of the fine-tuned model
+      "aspect_ratio": "string",     // Optional, default "1:1", allowed values: "21:9", "16:9", "4:3", "3:2", "1:1", "2:3", "3:4", "9:16", "9:21"
+      "output_format": "string",    // Optional, default "jpeg", allowed: "jpeg", "png"
+      "num_images": 1,               // Optional, default 1
+      "safety_tolerance": "string", // Optional, default "2", allowed: "1", "2", "3", "4", "5", "6"
+      "seed": 123,                    // Optional, integer seed
+      "finetune_strength": 0.5        // Fine-tune strength (0.0-1.0, float, required)
+    }
+    ```
+  - Response Body:
+    ```json
+    {
+      "request_id": "string"           // ID of the started generation task
+    }
+    ```
+  - Status Codes:
+    - 200: Generation started
+    - 500: Internal server error
+
+#### FLUX Ultra Result (Polling)
+- **Endpoint**: `/flux-ultra/result/{request_id}`
+  - **Method**: GET
+  - Path Parameter:
+    - `request_id`: string — идентификатор, полученный при запуске генерации
+  - Response Body (если готово):
+    ```json
+    {
+      "images": [
+        {
+          "url": "string",
+          "width": 2048,
+          "height": 2048,
+          "content_type": "image/jpeg"
+        }
+      ],
+      "timings": {},
+      "seed": 123,
+      "has_nsfw_concepts": [false],
+      "prompt": "string"
+    }
+    ```
+  - Status Codes:
+    - 200: Generation завершена, результат получен
+    - 404: Generation ещё не завершена или не найдена
+
 ### Task Status Values
 - `pending`: Task is queued
 - `processing_avatar_model`: Avatar generation in progress
-- `processing_background_removal`: Background removal in progress
-- `processing_overlay`: Overlay generation in progress
-- `uploading_image`: Uploading generated image
-- `done`: Task completed successfully
-- `error`: Task failed
-
-### API Status Codes
-- 200: Success
-- 201: Created
-- 400: Bad Request
-- 404: Not Found
-- 500: Internal Server Error
-
-### Frontend API Integration
-- Axios instance configured with base URL
-- Error handling middleware
-- Request/response interceptors
-- Status code handling
-- Loading state management
-
-## Development Environment
-- Linux environment (5.15.0-75-generic)
-- Python-based backend development
-- Node.js-based frontend development
-- FastAPI for API development
-- Uvicorn for ASGI server
-- Vite for frontend development server 

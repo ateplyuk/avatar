@@ -200,18 +200,19 @@
     {
       "prompt": "string",            // Prompt for image generation
       "finetune_id": "string",      // ID of the fine-tuned model
-      "aspect_ratio": "string",     // Optional, default "1:1", allowed values: "21:9", "16:9", "4:3", "3:2", "1:1", "2:3", "3:4", "9:16", "9:21"
+      "aspect_ratio": "string",     // Optional, default "1:1", allowed: "21:9", "16:9", "4:3", "3:2", "1:1", "2:3", "3:4", "9:16", "9:21"
       "output_format": "string",    // Optional, default "jpeg", allowed: "jpeg", "png"
       "num_images": 1,               // Optional, default 1
       "safety_tolerance": "string", // Optional, default "2", allowed: "1", "2", "3", "4", "5", "6"
-      "seed": 123,                    // Optional, integer seed
-      "finetune_strength": 0.5        // Fine-tune strength (0.0-1.0, float, required)
+      "seed": 123,                   // Optional, integer seed
+      "finetune_strength": 0.5       // Fine-tune strength (0.0-1.0, float, required)
     }
     ```
+  - Description: Запрос вызывает fal_client.submit (через to_thread), возвращает request_id из handler.request_id (реальный id задачи fal.ai, используемый для polling результата).
   - Response Body:
     ```json
     {
-      "request_id": "string"           // ID of the started generation task
+      "request_id": "string"           // fal.ai request_id для polling результата
     }
     ```
   - Status Codes:
@@ -222,7 +223,8 @@
 - **Endpoint**: `/flux-ultra/result/{request_id}`
   - **Method**: GET
   - Path Parameter:
-    - `request_id`: string — идентификатор, полученный при запуске генерации
+    - `request_id`: string — идентификатор, полученный при запуске генерации (из fal_client.submit)
+  - Description: Возвращает результат генерации через fal_client.result. Если задача не завершена — 404.
   - Response Body (если готово):
     ```json
     {
@@ -245,5 +247,9 @@
     - 404: Generation ещё не завершена или не найдена
 
 ### Task Status Values
-- `pending`: Task is queued
-- `processing_avatar_model`: Avatar generation in progress
+  - pending: Task is queued
+  - processing_avatar_model: Avatar generation in progress
+  - processing_background_removal: Background removal in progress
+  - uploading_image: Uploading generated image
+  - done: Task completed successfully
+  - error: Task failed

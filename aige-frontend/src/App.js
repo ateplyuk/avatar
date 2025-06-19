@@ -7,6 +7,7 @@ import Step2Background from './components/Step2Background';
 import Step3Overlay from './components/Step3Overlay';
 import TaskStatus from './components/TaskStatus';
 import Step1FluxUltra from './components/Step1FluxUltra';
+import Step4Upscale from './components/Step4Upscale';
 
 function App() {
   const [avatarDetails, setAvatarDetails] = useState({
@@ -25,6 +26,11 @@ function App() {
     readUrl: null, // readUrl for the overlay image
   });
 
+  const [upscaleDetails, setUpscaleDetails] = useState({
+    aigeTaskId: null,
+    readUrl: null,
+  });
+
   const handleAvatarSuccess = ({ avatarId, aigeTaskId, readUrl }) => {
     setAvatarDetails({ id: avatarId, aigeTaskId: aigeTaskId, readUrl: readUrl });
     // Reset background and overlay details if a new avatar is generated
@@ -40,6 +46,10 @@ function App() {
 
   const handleOverlaySuccess = ({ aigeTaskId, readUrl }) => {
     setOverlayDetails({ aigeTaskId: aigeTaskId, readUrl: readUrl });
+  };
+
+  const handleUpscaleSuccess = ({ aigeTaskId, readUrl }) => {
+    setUpscaleDetails({ aigeTaskId, readUrl });
   };
 
   return (
@@ -93,6 +103,19 @@ function App() {
               <TaskStatus
                 aigeTaskId={overlayDetails.aigeTaskId}
                 label="Overlay Generation Status"
+              />
+            )}
+          </section>
+        )}
+
+        {/* Step 4: Upscale - show if avatarId exists (optionally require overlayDetails.readUrl for strict sequence) */}
+        {avatarDetails.id && (
+          <section className="step-section">
+            <Step4Upscale avatarId={avatarDetails.id} onUpscaleSuccess={handleUpscaleSuccess} />
+            {upscaleDetails.aigeTaskId && (
+              <TaskStatus
+                aigeTaskId={upscaleDetails.aigeTaskId}
+                label="Upscale Status"
               />
             )}
           </section>

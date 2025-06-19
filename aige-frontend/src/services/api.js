@@ -186,3 +186,28 @@ export const getFluxUltraResult = async (requestId) => {
     throw error.response ? error.response.data : new Error('Network error or server issue while fetching FLUX Ultra result');
   }
 };
+
+/**
+ * Upscales an image for a given avatar by calling the backend API.
+ * @param {string} avatarIdFromPath - The ID of the avatar (used in URL path).
+ * @param {object} upscaleData - The data for upscaling.
+ * @param {string} upscaleData.image_url - The image URL to upscale.
+ * @param {number} upscaleData.scale - The scale factor.
+ * @param {string} upscaleData.model - The model to use.
+ * @param {string} upscaleData.output_format - Output format ('png' or 'jpeg').
+ * @param {string} upscaleData.avatar_id - The avatar_id (repeated in body for backend validation).
+ * @param {string} upscaleData.writeUrl - The pre-signed URL to write the result.
+ * @param {string} upscaleData.readUrl - The URL to read the result from.
+ * @returns {Promise<object>} The response from the API.
+ */
+export const upscaleAvatar = async (avatarIdFromPath, upscaleData) => {
+  const { image_url, scale, model, output_format, avatar_id, writeUrl, readUrl } = upscaleData;
+  const payload = { image_url, scale, model, output_format, avatar_id, writeUrl, readUrl };
+  try {
+    const response = await apiClient.put(`/avatar/${avatarIdFromPath}/upscaled`, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error upscaling image:', error.response ? error.response.data : error.message);
+    throw error.response ? error.response.data : new Error('Network error or server issue while upscaling image');
+  }
+};

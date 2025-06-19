@@ -150,6 +150,44 @@
     - 400: Avatar ID mismatch
     - 500: Internal server error
 
+#### Upscale Generation
+- **Endpoint:** `/avatar/{avatar_id}/upscaled`
+  - **Method**: PUT
+  - **Purpose:** Upscales the overlayed image to a higher resolution.
+  - Request Body:
+  ```json
+  {
+    "image_url": "string",         // URL of the input image 
+    "scale": 2,                     // Upscale factor (default: 2)
+    "model": "RealESRGAN_x4plus",  // Upscale model (default: 'RealESRGAN_x4plus')
+    "output_format": "png",        // Output image format ('png' or 'jpeg', default: 'png')
+    "writeUrl": "string",          // S3 pre-signed URL for uploading the result
+    "readUrl": "string",           // S3 pre-signed URL for reading the result
+    "avatar_id": "string"          // Avatar identifier
+  }
+  ```
+  - Response Body:
+  ```json
+  {
+    "aige_task_id": "string",      // Task identifier for status polling
+    "avatar_id": "string"          // Avatar identifier
+  }
+  ```
+  - Status values:
+    - `pending`: Task is queued
+    - `processing_upscale`: Upscale in progress
+    - `uploading_image`: Uploading upscaled image
+    - `done`: Task completed successfully
+    - `error`: Task failed
+
+### Task Status Values
+  - pending: Task is queued
+  - processing_avatar_model: Avatar generation in progress
+  - processing_background_removal: Background removal in progress
+  - uploading_image: Uploading generated image
+  - done: Task completed successfully
+  - error: Task failed
+
 #### Fine-tune (FLUX.1 Pro Trainer)
 - **Endpoint**: `/finetune`
   - **Method**: POST
@@ -246,10 +284,4 @@
     - 200: Generation завершена, результат получен
     - 404: Generation ещё не завершена или не найдена
 
-### Task Status Values
-  - pending: Task is queued
-  - processing_avatar_model: Avatar generation in progress
-  - processing_background_removal: Background removal in progress
-  - uploading_image: Uploading generated image
-  - done: Task completed successfully
-  - error: Task failed
+

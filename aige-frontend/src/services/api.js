@@ -211,3 +211,29 @@ export const upscaleAvatar = async (avatarIdFromPath, upscaleData) => {
     throw error.response ? error.response.data : new Error('Network error or server issue while upscaling image');
   }
 };
+
+/**
+ * Generates a video for a given avatar by calling the backend API.
+ * @param {string} avatarIdFromPath - The ID of the avatar (used in URL path).
+ * @param {object} videoData - The data for video generation.
+ * @param {string} videoData.prompt - The text prompt for video generation.
+ * @param {string} videoData.input_img - The input image URL.
+ * @param {string} videoData.duration - Duration in seconds ("5" or "10").
+ * @param {string} videoData.negative_prompt - Negative prompt.
+ * @param {number} videoData.cfg_scale - CFG scale.
+ * @param {string} videoData.avatar_id - The avatar_id (repeated in body for backend validation).
+ * @param {string} videoData.writeUrl - The pre-signed URL to write the result.
+ * @param {string} videoData.readUrl - The URL to read the result from.
+ * @returns {Promise<object>} The response from the API.
+ */
+export const generateVideo = async (avatarIdFromPath, videoData) => {
+  const { prompt, input_img, duration, negative_prompt, cfg_scale, avatar_id, writeUrl, readUrl } = videoData;
+  const payload = { prompt, input_img, duration, negative_prompt, cfg_scale, avatar_id, writeUrl, readUrl };
+  try {
+    const response = await apiClient.put(`/avatar/${avatarIdFromPath}/video`, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error generating video:', error.response ? error.response.data : error.message);
+    throw error.response ? error.response.data : new Error('Network error or server issue while generating video');
+  }
+};

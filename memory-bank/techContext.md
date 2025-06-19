@@ -180,6 +180,37 @@
     - `done`: Task completed successfully
     - `error`: Task failed
 
+#### Video Generation
+- **Endpoint:** `/avatar/{avatar_id}/video`
+  - **Method**: PUT
+  - **Purpose:** Generates a video from an input image and prompt.
+  - Request Body:
+  ```json
+  {
+    "prompt": "string",         // Text prompt for video generation
+    "input_img": "string",      // URL of the input image
+    "writeUrl": "string",       // S3 pre-signed URL for uploading the result
+    "readUrl": "string",        // S3 pre-signed URL for reading the result
+    "avatar_id": "string",      // Avatar identifier
+    "duration": "5",            // (optional) Duration in seconds ("5" or "10")
+    "negative_prompt": "blur, distort, and low quality", // (optional) Negative prompt
+    "cfg_scale": 0.5             // (optional) CFG scale
+  }
+  ```
+  - Response Body:
+  ```json
+  {
+    "aige_task_id": "string",   // Task identifier for status polling
+    "avatar_id": "string"       // Avatar identifier
+  }
+  ```
+  - Status values:
+    - `pending`: Task is queued
+    - `processing_video`: Video generation in progress
+    - `uploading_video`: Uploading generated video
+    - `done`: Task completed successfully
+    - `error`: Task failed
+
 ### Task Status Values
   - pending: Task is queued
   - processing_avatar_model: Avatar generation in progress

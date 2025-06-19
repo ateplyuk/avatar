@@ -8,6 +8,7 @@ import Step3Overlay from './components/Step3Overlay';
 import TaskStatus from './components/TaskStatus';
 import Step1FluxUltra from './components/Step1FluxUltra';
 import Step4Upscale from './components/Step4Upscale';
+import Step5Video from './components/Step5Video';
 
 function App() {
   const [avatarDetails, setAvatarDetails] = useState({
@@ -31,6 +32,11 @@ function App() {
     readUrl: null,
   });
 
+  const [videoDetails, setVideoDetails] = useState({
+    aigeTaskId: null,
+    readUrl: null,
+  });
+
   const handleAvatarSuccess = ({ avatarId, aigeTaskId, readUrl }) => {
     setAvatarDetails({ id: avatarId, aigeTaskId: aigeTaskId, readUrl: readUrl });
     // Reset background and overlay details if a new avatar is generated
@@ -50,6 +56,10 @@ function App() {
 
   const handleUpscaleSuccess = ({ aigeTaskId, readUrl }) => {
     setUpscaleDetails({ aigeTaskId, readUrl });
+  };
+
+  const handleVideoSuccess = ({ aigeTaskId, readUrl }) => {
+    setVideoDetails({ aigeTaskId, readUrl });
   };
 
   return (
@@ -116,6 +126,19 @@ function App() {
               <TaskStatus
                 aigeTaskId={upscaleDetails.aigeTaskId}
                 label="Upscale Status"
+              />
+            )}
+          </section>
+        )}
+
+        {/* Step 5: Video - show if avatarId exists */}
+        {avatarDetails.id && (
+          <section className="step-section">
+            <Step5Video avatarId={avatarDetails.id} onVideoSuccess={handleVideoSuccess} />
+            {videoDetails.aigeTaskId && (
+              <TaskStatus
+                aigeTaskId={videoDetails.aigeTaskId}
+                label="Video Generation Status"
               />
             )}
           </section>

@@ -9,6 +9,7 @@ import TaskStatus from './components/TaskStatus';
 import Step1FluxUltra from './components/Step1FluxUltra';
 import Step4Upscale from './components/Step4Upscale';
 import Step5Video from './components/Step5Video';
+import Step6Reframe from './components/Step6Reframe';
 
 function App() {
   const [avatarDetails, setAvatarDetails] = useState({
@@ -37,6 +38,11 @@ function App() {
     readUrl: null,
   });
 
+  const [reframeDetails, setReframeDetails] = useState({
+    aigeTaskId: null,
+    readUrl: null,
+  });
+
   const handleAvatarSuccess = ({ avatarId, aigeTaskId, readUrl }) => {
     setAvatarDetails({ id: avatarId, aigeTaskId: aigeTaskId, readUrl: readUrl });
     // Reset background and overlay details if a new avatar is generated
@@ -60,6 +66,10 @@ function App() {
 
   const handleVideoSuccess = ({ aigeTaskId, readUrl }) => {
     setVideoDetails({ aigeTaskId, readUrl });
+  };
+
+  const handleReframeSuccess = ({ aigeTaskId, readUrl }) => {
+    setReframeDetails({ aigeTaskId, readUrl });
   };
 
   return (
@@ -139,6 +149,22 @@ function App() {
               <TaskStatus
                 aigeTaskId={videoDetails.aigeTaskId}
                 label="Video Generation Status"
+              />
+            )}
+          </section>
+        )}
+
+        {/* Step 6: Reframe - show if avatarId exists */}
+        {avatarDetails.id && (
+          <section className="step-section">
+            <Step6Reframe 
+              avatarId={avatarDetails.id} 
+              onReframeSuccess={handleReframeSuccess}
+            />
+            {reframeDetails.aigeTaskId && (
+              <TaskStatus
+                aigeTaskId={reframeDetails.aigeTaskId}
+                label="Reframe Status"
               />
             )}
           </section>

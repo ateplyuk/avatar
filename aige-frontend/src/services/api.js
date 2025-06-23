@@ -91,6 +91,46 @@ export const generateOverlay = async (avatarIdFromPath, overlayData) => {
 };
 
 /**
+ * Reframes an image for a given avatar by calling the backend API.
+ * @param {string} avatarIdFromPath - The ID of the avatar (used in URL path).
+ * @param {object} reframeData - The data for reframing.
+ * @param {string} reframeData.image_url - The URL of the input image to reframe.
+ * @param {string} reframeData.aspect_ratio - The aspect ratio of the reframed image.
+ * @param {string} [reframeData.prompt] - Optional prompt for reframing.
+ * @param {number} [reframeData.grid_position_x] - Optional X position of the grid for reframing.
+ * @param {number} [reframeData.grid_position_y] - Optional Y position of the grid for reframing.
+ * @param {number} [reframeData.x_end] - Optional end X coordinate for reframing.
+ * @param {number} [reframeData.x_start] - Optional start X coordinate for reframing.
+ * @param {number} [reframeData.y_end] - Optional end Y coordinate for reframing.
+ * @param {number} [reframeData.y_start] - Optional start Y coordinate for reframing.
+ * @param {string} reframeData.avatar_id - The avatar_id (repeated in body for backend validation).
+ * @param {string} reframeData.writeUrl - The pre-signed URL to write the result.
+ * @param {string} reframeData.readUrl - The URL to read the result from.
+ * @returns {Promise<object>} The response from the API.
+ */
+export const generateReframe = async (avatarIdFromPath, reframeData) => {
+  const { image_url, aspect_ratio, prompt, grid_position_x, grid_position_y, x_end, x_start, y_end, y_start, avatar_id, writeUrl, readUrl } = reframeData;
+  const payload = { image_url, aspect_ratio, avatar_id, writeUrl, readUrl };
+  
+  // Add optional parameters if they are provided
+  if (prompt !== undefined) payload.prompt = prompt;
+  if (grid_position_x !== undefined) payload.grid_position_x = grid_position_x;
+  if (grid_position_y !== undefined) payload.grid_position_y = grid_position_y;
+  if (x_end !== undefined) payload.x_end = x_end;
+  if (x_start !== undefined) payload.x_start = x_start;
+  if (y_end !== undefined) payload.y_end = y_end;
+  if (y_start !== undefined) payload.y_start = y_start;
+  
+  try {
+    const response = await apiClient.put(`/avatar/${avatarIdFromPath}/reframe`, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error reframing image:', error.response ? error.response.data : error.message);
+    throw error.response ? error.response.data : new Error('Network error or server issue while reframing image');
+  }
+};
+
+/**
  * Fetches the status of a task from the backend API.
  * @param {string} aigeTaskId - The AIGE task ID.
  * @returns {Promise<object>} The task status response from the API.

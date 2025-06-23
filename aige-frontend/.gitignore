@@ -26,3 +26,6 @@ yarn-error.log*
 # BACKEND
 /__pycache__
 /endpoints/__pycache__
+/home/ubuntu/aige_jules/avatar/aige-backend/endpoints/__pycache__
+/home/ubuntu/aige_jules/avatar/aige-backend/__pycache__
+/home/ubuntu/aige_jules/avatar/server.log

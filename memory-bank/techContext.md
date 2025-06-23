@@ -211,11 +211,52 @@
     - `done`: Task completed successfully
     - `error`: Task failed
 
+#### Reframe Generation
+- **Endpoint:** `/avatar/{avatar_id}/reframe`
+  - **Method**: PUT
+  - **Purpose:** Reframes an image to a different aspect ratio using AI.
+  - Request Body:
+  ```json
+  {
+    "image_url": "string",         // URL of the input image to reframe
+    "aspect_ratio": "string",      // Aspect ratio of the reframed image (default: "16:9")
+    "prompt": "string",            // (optional) Prompt for reframing
+    "grid_position_x": 0,          // (optional) X position of the grid for reframing
+    "grid_position_y": 0,          // (optional) Y position of the grid for reframing
+    "x_end": 100,                  // (optional) End X coordinate for reframing
+    "x_start": 0,                  // (optional) Start X coordinate for reframing
+    "y_end": 100,                  // (optional) End Y coordinate for reframing
+    "y_start": 0,                  // (optional) Start Y coordinate for reframing
+    "writeUrl": "string",          // Pre-signed URL for uploading the result
+    "readUrl": "string",           // URL for reading the result
+    "avatar_id": "string"          // Avatar identifier
+  }
+  ```
+  - Response Body:
+  ```json
+  {
+    "aige_task_id": "string",      // Task identifier for status polling
+    "avatar_id": "string"          // Avatar identifier
+  }
+  ```
+  - Status values:
+    - `pending`: Task is queued
+    - `processing_reframe_model`: Reframe in progress
+    - `uploading_image`: Uploading reframed image
+    - `done`: Task completed successfully
+    - `error`: Task failed
+
 ### Task Status Values
   - pending: Task is queued
   - processing_avatar_model: Avatar generation in progress
   - processing_background_removal: Background removal in progress
+  - processing_background_model: Background generation in progress
+  - processing_overlay_model: Overlay generation in progress
+  - processing_upscale: Upscale in progress
+  - processing_video: Video generation in progress
+  - processing_reframe_model: Reframe in progress
   - uploading_image: Uploading generated image
+  - uploading_video: Uploading generated video
   - done: Task completed successfully
   - error: Task failed
 

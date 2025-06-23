@@ -17,8 +17,19 @@ export const OVERLAY_ASPECT_RATIOS = [
   { label: 'Landscape 16:9', value: 'landscape_16_9' }
 ];
 
+export const REFRAME_ASPECT_RATIOS = [
+  { label: '1:1', value: '1:1' },
+  { label: '16:9', value: '16:9' },
+  { label: '9:16', value: '9:16' },
+  { label: '4:3', value: '4:3' },
+  { label: '3:4', value: '3:4' },
+  { label: '21:9', value: '21:9' },
+  { label: '9:21', value: '9:21' }
+];
+
 export const DEFAULT_ASPECT_RATIO = ASPECT_RATIOS[0].value;
 export const DEFAULT_OVERLAY_ASPECT_RATIO = OVERLAY_ASPECT_RATIOS[0].value;
+export const DEFAULT_REFRAME_ASPECT_RATIO = REFRAME_ASPECT_RATIOS[1].value; // 16:9 as default
 
 // Interval in milliseconds for polling task status
 export const TASK_STATUS_POLL_INTERVAL = 5000;
@@ -66,4 +77,5 @@ const generateS3Urls = async () => {
 export const generateAvatarUrls = () => generateS3Urls();
 export const generateBackgroundUrls = () => generateS3Urls();
 export const generateOverlayUrls = () => generateS3Urls();
+export const generateReframeUrls = () => generateS3Urls();
 

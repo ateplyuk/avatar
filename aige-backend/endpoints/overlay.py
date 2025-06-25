@@ -84,11 +84,20 @@ async def run_overlay_task(task_id: str, avatar_id_from_path: str, request_data:
                 resample = Image.ANTIALIAS
             person_img = person_img.resize((new_w, new_h), resample)
 
-            # 5. Compute position (centered)
-            x = int((request_data.params.position.x / 100) * bg_w)
-            y = int((request_data.params.position.y / 100) * bg_h)
-            paste_x = x - new_w // 2
-            paste_y = y - new_h // 2
+            # 5. Compute position (absolute values)
+            # Extract positioning parameters
+            x_offset = request_data.params.position.x
+            y_offset = request_data.params.position.y
+            scale = request_data.params.position.scale
+            
+            # Calculate new dimensions with scale
+            new_w = int(person_w * scale)
+            new_h = int(person_h * scale)
+            
+            # Calculate position for placing person with offset
+            # Center of background + offset - half width/height of person
+            paste_x = int((bg_w // 2) - (new_w // 2) + x_offset)
+            paste_y = int((bg_h // 2) - (new_h // 2) + y_offset)
 
             # 6. Paste person onto canvas
             canvas.paste(person_img, (paste_x, paste_y), person_img)

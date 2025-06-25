@@ -38,6 +38,27 @@ const Step3Overlay = ({ onOverlaySuccess, avatarId, aigeTaskId, personImageUrl, 
   const [w, h] = ASPECT_RATIO_MAP[aspectRatio] || [1, 1];
   const previewHeight = PREVIEW_WIDTH * (h / w);
 
+  // Calculate scale factor between preview and actual image
+  // Assuming actual image dimensions (you may need to adjust these based on your aspect ratios)
+  const getActualImageDimensions = () => {
+    const [w, h] = ASPECT_RATIO_MAP[aspectRatio] || [1, 1];
+    // Assuming a base size of 1024px for the larger dimension
+    const baseSize = 1024;
+    if (w >= h) {
+      return { width: baseSize, height: Math.round(baseSize * h / w) };
+    } else {
+      return { width: Math.round(baseSize * w / h), height: baseSize };
+    }
+  };
+
+  const getScaleFactor = () => {
+    const actual = getActualImageDimensions();
+    return {
+      x: actual.width / PREVIEW_WIDTH,
+      y: actual.height / previewHeight
+    };
+  };
+
   // useEffect(() => {
   //   setOverlayId(uuidv4());
   // }, []);
@@ -177,7 +198,9 @@ const Step3Overlay = ({ onOverlaySuccess, avatarId, aigeTaskId, personImageUrl, 
 
   const handlePositionChange = (field, value) => {
     if (field === 'x' || field === 'y') {
-      value = Math.max(0, Math.min(100, value));
+      // For absolute values, we don't need to clamp to 0-100
+      // Just ensure they're reasonable numbers
+      value = Math.max(-1000, Math.min(1000, value));
     }
     setPosition(prev => ({
       ...prev,
@@ -196,12 +219,16 @@ const Step3Overlay = ({ onOverlaySuccess, avatarId, aigeTaskId, personImageUrl, 
       const rect = previewContainerRef.getBoundingClientRect();
       const xPx = e.clientX - rect.left;
       const yPx = e.clientY - rect.top;
-      const xPercent = Math.max(0, Math.min(100, (xPx / rect.width) * 100));
-      const yPercent = Math.max(0, Math.min(100, (yPx / rect.height) * 100));
+      
+      // Convert preview coordinates to absolute image coordinates
+      const scaleFactor = getScaleFactor();
+      const xAbsolute = Math.round((xPx - rect.width / 2) * scaleFactor.x);
+      const yAbsolute = Math.round((yPx - rect.height / 2) * scaleFactor.y);
+      
       setPosition(prev => ({
         ...prev,
-        x: xPercent,
-        y: yPercent
+        x: xAbsolute,
+        y: yAbsolute
       }));
     }
   };
@@ -248,27 +275,23 @@ const Step3Overlay = ({ onOverlaySuccess, avatarId, aigeTaskId, personImageUrl, 
           <div>
             <label>Position:</label>
             <div>
-              <label htmlFor="position-x">X (%):</label>
+              <label htmlFor="position-x">X (px):</label>
               <input
                 type="number"
                 id="position-x"
                 value={position.x}
                 onChange={(e) => handlePositionChange('x', Number(e.target.value))}
-                min={0}
-                max={100}
-                step={0.1}
+                step={1}
               />
             </div>
             <div>
-              <label htmlFor="position-y">Y (%):</label>
+              <label htmlFor="position-y">Y (px):</label>
               <input
                 type="number"
                 id="position-y"
                 value={position.y}
                 onChange={(e) => handlePositionChange('y', Number(e.target.value))}
-                min={0}
-                max={100}
-                step={0.1}
+                step={1}
               />
             </div>
             <div>
@@ -369,8 +392,8 @@ const Step3Overlay = ({ onOverlaySuccess, avatarId, aigeTaskId, personImageUrl, 
               alt="Person"
               style={{
                 position: 'absolute',
-                left: position.x + '%',
-                top: position.y + '%',
+                left: '50%',
+                top: '50%',
                 width: `${position.scale * 100}%`,
                 height: 'auto',
                 zIndex: 2,
@@ -378,7 +401,7 @@ const Step3Overlay = ({ onOverlaySuccess, avatarId, aigeTaskId, personImageUrl, 
                 pointerEvents: 'auto',
                 maxWidth: 'none',
                 maxHeight: 'none',
-                transform: 'translate(-50%, -50%)',
+                transform: `translate(calc(-50% + ${position.x / getScaleFactor().x}px), calc(-50% + ${position.y / getScaleFactor().y}px))`,
               }}
               draggable
               onDragStart={handleDragStart}

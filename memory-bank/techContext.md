@@ -246,6 +246,40 @@
     - `done`: Task completed successfully
     - `error`: Task failed
 
+#### Refine Generation (FLUX.1 Kontext Max)
+- **Endpoint:** `/avatar/{avatar_id}/refine`
+  - **Method**: PUT
+  - **Purpose:** Editing an image.
+  - Request Body:
+  ```json
+  {
+    "prompt": "string",            // Prompt describing the edit
+    "image_url": "string",         // URL of the input image to edit
+    "aspect_ratio": "string",      // Aspect ratio of the output image (default: "1:1") Allowed values: '1:1', '16:9', '9:16', '4:3', '3:2', '2:3', '3:4', '21:9', '9:21'
+    "guidance_scale": 3.5,          // (optional) CFG scale (default: 3.5)
+    "num_images": 1,                // (optional) Number of images to generate (default: 1)
+    "safety_tolerance": "2",       // (optional) Safety tolerance (default: "2")
+    "output_format": "jpeg",       // (optional) Output format (default: "jpeg")
+    "seed": 123,                    // (optional) Seed for reproducibility
+    "writeUrl": "string",          // Pre-signed URL for uploading the result
+    "readUrl": "string",           // URL for reading the result
+    "avatar_id": "string"          // Avatar identifier
+  }
+  ```
+  - Response Body:
+  ```json
+  {
+    "aige_task_id": "string",      // Task identifier for status polling
+    "avatar_id": "string"          // Avatar identifier
+  }
+  ```
+  - Status values:
+    - `pending`: Task is queued
+    - `processing_refine_model`: Refine in progress
+    - `uploading_image`: Uploading refined image
+    - `done`: Task completed successfully
+    - `error`: Task failed
+
 ### Task Status Values
   - pending: Task is queued
   - processing_avatar_model: Avatar generation in progress
@@ -255,6 +289,7 @@
   - processing_upscale: Upscale in progress
   - processing_video: Video generation in progress
   - processing_reframe_model: Reframe in progress
+  - processing_refine_model: Refine in progress
   - uploading_image: Uploading generated image
   - uploading_video: Uploading generated video
   - done: Task completed successfully

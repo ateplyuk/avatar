@@ -44,6 +44,7 @@ from .endpoints import flux_ultra as flux_ultra_router
 from .endpoints import upscale as upscale_router
 from .endpoints import video as video_router
 from .endpoints import reframe as reframe_router
+from .endpoints import refine as refine_router
 
 # Simple root endpoint
 @app.get("/")
@@ -62,6 +63,7 @@ api_router.include_router(flux_ultra_router.router, prefix="/flux-ultra", tags=[
 api_router.include_router(upscale_router.router, tags=["upscale"])
 api_router.include_router(video_router.router, tags=["video"])
 api_router.include_router(reframe_router.router, tags=["reframe"])
+api_router.include_router(refine_router.router, tags=["refine"])
 
 # Include the main api_router into the app with a global prefix
 app.include_router(api_router, prefix="/api/v1")

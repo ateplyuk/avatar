@@ -123,7 +123,7 @@
     ```json
     {
       "prompt": "string",
-      "aspect_ratio": "string",     // Optional, default "square", allowed values ["square_hd", "square", "portrait_4_3", "portrait_16_9", "landscape_4_3", "landscape_16_9"]
+      "aspect_ratio": "string",     // Optional, default "1:1", allowed values [1:1, 16:9, 9:16, 3:4, 4:3]
       "params": {
         "person": "string",         // URL of the person image
         "background": "string",     // URL of the background image
@@ -219,7 +219,7 @@
   ```json
   {
     "image_url": "string",         // URL of the input image to reframe
-    "aspect_ratio": "string",      // Aspect ratio of the reframed image (default: "16:9")
+    "aspect_ratio": "string",      // Aspect ratio of the reframed image (default: "16:9") Allowed values: '1:1', '16:9', '9:16', '4:3', '3:4', '21:9', '9:21'
     "prompt": "string",            // (optional) Prompt for reframing
     "grid_position_x": 0,          // (optional) X position of the grid for reframing
     "grid_position_y": 0,          // (optional) Y position of the grid for reframing

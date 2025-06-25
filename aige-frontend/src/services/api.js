@@ -131,6 +131,40 @@ export const generateReframe = async (avatarIdFromPath, reframeData) => {
 };
 
 /**
+ * Refines (edits) an image for a given avatar by calling the backend API.
+ * @param {string} avatarIdFromPath - The ID of the avatar (used in URL path).
+ * @param {object} refineData - The data for refinement.
+ * @param {string} refineData.prompt - The edit prompt.
+ * @param {string} refineData.image_url - The URL of the input image to edit.
+ * @param {string} refineData.aspect_ratio - The aspect ratio of the output image.
+ * @param {number} [refineData.guidance_scale] - CFG scale.
+ * @param {number} [refineData.num_images] - Number of images to generate.
+ * @param {string} [refineData.safety_tolerance] - Safety tolerance.
+ * @param {string} [refineData.output_format] - Output format.
+ * @param {number} [refineData.seed] - Seed for reproducibility.
+ * @param {string} refineData.avatar_id - The avatar_id (repeated in body for backend validation).
+ * @param {string} refineData.writeUrl - The pre-signed URL to write the result.
+ * @param {string} refineData.readUrl - The URL to read the result from.
+ * @returns {Promise<object>} The response from the API.
+ */
+export const generateRefine = async (avatarIdFromPath, refineData) => {
+  const { prompt, image_url, aspect_ratio, guidance_scale, num_images, safety_tolerance, output_format, seed, avatar_id, writeUrl, readUrl } = refineData;
+  const payload = { prompt, image_url, aspect_ratio, avatar_id, writeUrl, readUrl };
+  if (guidance_scale !== undefined) payload.guidance_scale = guidance_scale;
+  if (num_images !== undefined) payload.num_images = num_images;
+  if (safety_tolerance !== undefined) payload.safety_tolerance = safety_tolerance;
+  if (output_format !== undefined) payload.output_format = output_format;
+  if (seed !== undefined) payload.seed = seed;
+  try {
+    const response = await apiClient.put(`/avatar/${avatarIdFromPath}/refine`, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error refining image:', error.response ? error.response.data : error.message);
+    throw error.response ? error.response.data : new Error('Network error or server issue while refining image');
+  }
+};
+
+/**
  * Fetches the status of a task from the backend API.
  * @param {string} aigeTaskId - The AIGE task ID.
  * @returns {Promise<object>} The task status response from the API.

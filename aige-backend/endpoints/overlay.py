@@ -40,6 +40,15 @@ class OverlayResponse(BaseModel):
     aige_task_id: str
     avatar_id: str
 
+# Маппинг пользовательских значений к fal
+ASPECT_RATIO_MAP = {
+    '1:1': 'square',
+    '4:3': 'landscape_4_3',
+    '3:4': 'portrait_4_3',
+    '16:9': 'landscape_16_9',
+    '9:16': 'portrait_16_9',
+}
+
 def on_fal_queue_update(update, task_id, step_name):
     if isinstance(update, fal_client.InProgress):
         for log_entry in update.logs:
@@ -85,17 +94,11 @@ async def run_overlay_task(task_id: str, avatar_id_from_path: str, request_data:
             person_img = person_img.resize((new_w, new_h), resample)
 
             # 5. Compute position (absolute values)
-            # Extract positioning parameters
             x_offset = request_data.params.position.x
             y_offset = request_data.params.position.y
             scale = request_data.params.position.scale
-            
-            # Calculate new dimensions with scale
             new_w = int(person_w * scale)
             new_h = int(person_h * scale)
-            
-            # Calculate position for placing person with offset
-            # Center of background + offset - half width/height of person
             paste_x = int((bg_w // 2) - (new_w // 2) + x_offset)
             paste_y = int((bg_h // 2) - (new_h // 2) + y_offset)
 
@@ -109,8 +112,6 @@ async def run_overlay_task(task_id: str, avatar_id_from_path: str, request_data:
             composed_bytes = out_buf.read()
 
             # 8. Upload to S3 (use writeUrl as temp, or generate new if needed)
-            # We'll use the same writeUrl as for overlay, or you can generate a new one if needed
-            # Here, for simplicity, use writeUrl
             await upload_image_to_presigned_url(request_data.writeUrl, composed_bytes, 'image/jpeg')
             logger.info(f"Task {task_id}: Composed person image uploaded to {request_data.writeUrl}")
 
@@ -119,9 +120,17 @@ async def run_overlay_task(task_id: str, avatar_id_from_path: str, request_data:
 
             logger.info(f"Task {task_id}: Calling Fal.ai model {OVERLAY_MODEL}...")
 
+            # Маппинг aspect_ratio
+            user_aspect_ratio = request_data.aspect_ratio
+            fal_aspect_ratio = ASPECT_RATIO_MAP.get(user_aspect_ratio)
+            if not fal_aspect_ratio:
+                logger.error(f"Task {task_id}: Unsupported aspect_ratio '{user_aspect_ratio}' for overlay.")
+                task_status_db[task_id] = "error"
+                raise HTTPException(status_code=400, detail=f"Unsupported aspect_ratio '{user_aspect_ratio}'. Allowed: {list(ASPECT_RATIO_MAP.keys())}")
+
             overlay_model_args = {
                 "prompt": request_data.prompt,
-                "image_size": request_data.aspect_ratio,
+                "image_size": fal_aspect_ratio,
                 "image_url": composed_image_url,
                 "background_threshold": 0.67,
                 "num_inference_steps": 28,

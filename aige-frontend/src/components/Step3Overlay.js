@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import * as api from '../services/api';
-import { OVERLAY_ASPECT_RATIOS, DEFAULT_OVERLAY_ASPECT_RATIO, generateOverlayUrls, TASK_STATUS_POLL_INTERVAL } from '../config';
+import { OVERLAY_USER_ASPECT_RATIOS, DEFAULT_OVERLAY_ASPECT_RATIO, generateOverlayUrls, TASK_STATUS_POLL_INTERVAL } from '../config';
 import './Step3Overlay.css';
 
 // Маппинг value -> [width, height] для aspect ratio
@@ -16,7 +16,7 @@ const ASPECT_RATIO_MAP = {
 
 const Step3Overlay = ({ onOverlaySuccess, avatarId, aigeTaskId, personImageUrl, backgroundImageUrl }) => {
   const [prompt, setPrompt] = useState('');
-  const [aspectRatio, setAspectRatio] = useState(DEFAULT_OVERLAY_ASPECT_RATIO);
+  const [aspectRatio, setAspectRatio] = useState(OVERLAY_USER_ASPECT_RATIOS[0].value);
   const [overlayId, setOverlayId] = useState('');
   const [requestBody, setRequestBody] = useState(null);
   const [responseBody, setResponseBody] = useState(null);
@@ -141,12 +141,9 @@ const Step3Overlay = ({ onOverlaySuccess, avatarId, aigeTaskId, personImageUrl, 
       const payload = {
         prompt,
         aspect_ratio: aspectRatio,
-        // overlay_id: overlayId,
         avatar_id: avatarId,
-        // aige_task_id: aigeTaskId,
         writeUrl: urls.writeUrl,
         readUrl: urls.readUrl,
-        // source_images: DEFAULT_SOURCE_IMAGES,
         params: {
           person: personImageUrl,
           background: backgroundImageUrl,
@@ -171,7 +168,6 @@ const Step3Overlay = ({ onOverlaySuccess, avatarId, aigeTaskId, personImageUrl, 
       
       if (onOverlaySuccess) {
         onOverlaySuccess({
-          // overlayId: overlayId,
           aigeTaskId: currentTaskID,
           readUrl: urls.readUrl
         });
@@ -267,7 +263,7 @@ const Step3Overlay = ({ onOverlaySuccess, avatarId, aigeTaskId, personImageUrl, 
               value={aspectRatio}
               onChange={(e) => setAspectRatio(e.target.value)}
             >
-              {OVERLAY_ASPECT_RATIOS.map(ar => (
+              {OVERLAY_USER_ASPECT_RATIOS.map(ar => (
                 <option key={ar.value} value={ar.value}>{ar.label}</option>
               ))}
             </select>

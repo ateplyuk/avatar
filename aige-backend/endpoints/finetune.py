@@ -22,7 +22,7 @@ class FinetuneRequest(BaseModel):
     finetune_type: Optional[str] = "full"
 
 class FinetuneResponse(BaseModel):
-    finetune_id: str
+    request_id: str
 
 @router.post("/", response_model=FinetuneResponse)
 async def start_finetune(request: FinetuneRequest):
@@ -45,7 +45,7 @@ async def start_finetune(request: FinetuneRequest):
             arguments=arguments
         )
         logger.info(f"Started finetune: {handler.request_id}")
-        return FinetuneResponse(finetune_id=handler.request_id)
+        return FinetuneResponse(request_id=handler.request_id)
     except Exception as e:
         logger.error(f"Error starting finetune: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e)) 
@@ -54,18 +54,38 @@ async def start_finetune(request: FinetuneRequest):
 async def get_finetune_result(request_id: str):
     setup_fal_key()
     try:
-        # fal_client.result может быть sync, поэтому используем to_thread
-        result = await asyncio.to_thread(
-            fal_client.result,
+        # Получаем статус задачи
+        status_info = await asyncio.to_thread(
+            fal_client.status,
             FLUX_PRO_TRAINER_MODEL,
             request_id
         )
-        # result должен содержать finetune_id, если готово
-        finetune_id = result.get("finetune_id")
-        if finetune_id:
-            return {"finetune_id": finetune_id}
+        # Универсально определяем статус
+        if hasattr(status_info, "status"):
+            status = status_info.status
+        elif isinstance(status_info, dict):
+            status = status_info.get("status", "pending")
+        elif isinstance(status_info, str):
+            status = status_info
         else:
-            raise HTTPException(status_code=404, detail="Fine-tune not completed yet.")
+            status = "pending"
+        # Пробуем получить результат
+        try:
+            result = await asyncio.to_thread(
+                fal_client.result,
+                FLUX_PRO_TRAINER_MODEL,
+                request_id
+            )
+            finetune_id = result.get("finetune_id") if result else None
+        except Exception as e:
+            # Если ошибка получения результата (например, 422) — считаем статус error
+            return {"status": "error", "detail": str(e)}
+        if finetune_id:
+            return {"finetune_id": finetune_id, "status": "done"}
+        elif status in ("pending", "processing_fine_tune", "error"):
+            return {"status": status}
+        else:
+            raise HTTPException(status_code=404, detail="Fine-tune not found.")
     except Exception as e:
         logger.error(f"Error fetching finetune result for {request_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=404, detail="Fine-tune not completed yet.") 
+        raise HTTPException(status_code=404, detail="Fine-tune not found.") 

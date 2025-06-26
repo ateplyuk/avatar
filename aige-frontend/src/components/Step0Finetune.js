@@ -50,20 +50,23 @@ const Step0Finetune = () => {
     pollIntervalRef.current = setInterval(async () => {
       try {
         const res = await getFinetuneResult(requestId);
-        if (res && res.finetune_id) {
-          setResult({
-            message: 'Fine-tune completed!',
-            finetune_id: res.finetune_id
-          });
-          setPollStatus('');
+        setResult(res); // Показываем всегда актуальный json-ответ
+        if (res && res.finetune_id && res.status === 'done') {
+          setPollStatus('Fine-tune completed!');
           setPolling(false);
           clearInterval(pollIntervalRef.current);
           clearTimeout(pollTimeoutRef.current);
+        } else if (res && res.status) {
+          setPollStatus('Status: ' + res.status);
+          if (res.status === 'error') {
+            setPolling(false);
+            clearInterval(pollIntervalRef.current);
+            clearTimeout(pollTimeoutRef.current);
+          }
         }
       } catch (err) {
-        // Если ошибка 404 — значит ещё не готово, продолжаем polling
         if (err && err.status === 404) {
-          setPollStatus('Still processing...');
+          setPollStatus('Not found or not started.');
         } else {
           setPollStatus('Error fetching result: ' + (err.detail || err.message));
           setPolling(false);
@@ -98,11 +101,13 @@ const Step0Finetune = () => {
       const req = { ...form };
       if (!req.finetune_comment) delete req.finetune_comment;
       const res = await startFinetune(req);
-      setResponse({ request_id: res.finetune_id });
-      setResult({
-        message: 'Fine-tune started. Waiting for completion...'
-      });
-      pollForFinetuneId(res.finetune_id);
+      setResponse({ request_id: res.request_id });
+      setResult({ message: 'Fine-tune started. Waiting for completion...' });
+      if (res.request_id) {
+        pollForFinetuneId(res.request_id);
+      } else {
+        setError('No request_id returned from backend');
+      }
     } catch (err) {
       setError(err.detail || err.message || 'Unknown error');
     } finally {
@@ -216,6 +221,9 @@ const Step0Finetune = () => {
           <div className="debug-section">
             <h3>Response:</h3>
             <pre>{JSON.stringify(response, null, 2)}</pre>
+            {response.request_id && (
+              <div style={{fontSize: '0.95em', color: '#1976d2'}}>Use this <b>request_id</b> to poll for result.</div>
+            )}
           </div>
         )}
         {result && (

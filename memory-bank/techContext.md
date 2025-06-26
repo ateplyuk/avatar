@@ -315,7 +315,7 @@
   - Response Body:
     ```json
     {
-      "finetune_id": "string"         // ID of the started fine-tune job
+      "request_id": "string"         // ID of the started fine-tune job
     }
     ```
   - Status Codes:
@@ -330,12 +330,19 @@
   - Response Body (если готово):
     ```json
     {
-      "finetune_id": "string" // ID завершённого fine-tune
+      "finetune_id": "string", // ID завершённого fine-tune
+      "status": "done"
+    }
+    ```
+  - Response Body (если не завершено):
+    ```json
+    {
+      "status": "pending" // или "processing_fine_tune", "error"
     }
     ```
   - Status Codes:
-    - 200: Fine-tune завершён, finetune_id получен
-    - 404: Fine-tune ещё не завершён или не найден
+    - 200: Найден, возвращён статус или результат
+    - 404: Fine-tune не найден (request_id не существует)
 
 #### FLUX Ultra Generation (FLUX1.1 Pro Ultra-finetuned)
 - **Endpoint**: `/flux-ultra`
